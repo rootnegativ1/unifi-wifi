@@ -60,7 +60,9 @@ ___
   | SSID | no | STRING wireless network whose password you want to change  |
   | method | no | STRING method to generate password. One of: char, word, or xkcd |
 
-lorem ipsum --> explain different methods
+  - char --> 24-character alphanumeric string
+  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^1]
+  - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass)
 
 ### ```unifi_wifi.refresh_networks```
   | Service data attribute | Optional | Description |
@@ -68,3 +70,4 @@ lorem ipsum --> explain different methods
   | none | | |
 
 lorem ipsum --> needed to refresh changes made directly on the contoller
+[^1]: https://www.eff.org/dice
