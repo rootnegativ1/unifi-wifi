@@ -4,8 +4,13 @@
 lorem ipsum --> brief introduction and purpose
 
 ## HACS Installation
-
-lorem ipsum --> directions
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rootnegativ1&repository=unifi_wifi&category=integration) [^1]
+1. Go to any of the sections (integrations, frontend, automation).
+2. Click on the 3 dots in the top right corner.
+3. Select "Custom repositories"
+4. Add the URL ```https://github.com/rootnegativ1/unifi_wifi``` to the repository.
+5. Select the ```integration``` category.
+6. Click the "ADD" button.
 
 ## Manual Installation
 Merge the ```custom_components``` folder with the one in your Home Assistant ```config``` folder
@@ -66,7 +71,7 @@ ___
   | method | no | STRING method to generate password. One of: char, word, or xkcd |
 
   - char --> 24-character alphanumeric string
-  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^1]
+  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^2]
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass)
 
 ### ```unifi_wifi.refresh_networks```
@@ -75,4 +80,5 @@ ___
   | none | | |
 
 lorem ipsum --> needed to refresh changes made directly on the contoller
-[^1]: https://www.eff.org/dice
+[^1]: https://my.home-assistant.io/create-link/
+[^2]: https://www.eff.org/dice
