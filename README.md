@@ -2,6 +2,8 @@
 
 lorem ipsum --> brief introduction and purpose
 
+## HACS Installation
+
 ## Manual Installation
 Merge the ```custom_components``` folder with the one in your Home Assistant ```config``` folder
 
