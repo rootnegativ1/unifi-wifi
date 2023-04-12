@@ -41,8 +41,8 @@ CONFIG_SCHEMA = vol.Schema({
         vol.Required(CONF_BASEURL): cv.string,
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
-        vol.Required(CONF_SITE): cv.string,
-        vol.Required(CONF_UNIFIOS): cv.boolean,
+        vol.Optional(CONF_SITE, default="default"): cv.string,
+        vol.Optional(CONF_UNIFIOS, default=True): cv.boolean,
         vol.Optional(CONF_NETWORKS, default=[]): vol.All(
             cv.ensure_list, [_NETWORKS_SCHEMA]
         ),
