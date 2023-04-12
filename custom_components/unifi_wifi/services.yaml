@@ -1,0 +1,47 @@
+custom_password:
+  name: Custom password
+  description: blah blah blah
+  fields:
+    ssid:
+      name: ssid
+      description: wireless network whose password you want to change
+      required: true
+      advanced: false
+      example: "Guest"
+      default: "Guest"
+    password:
+      name: password
+      description: set a user-provided password
+      required: true
+      advanced: false
+      example: "12345678"
+      default: "12345678"
+
+random_password:
+  name: Random password
+  description: bleep bloop
+  fields:
+    ssid:
+      name: ssid
+      description: wireless network whose password you want to change
+      required: true
+      advanced: false
+      example: "Guest"
+      default: "Guest"
+    method:
+      name: method
+      description: "method to generate password. One of: char, word, or xkcd"
+      required: true
+      advanced: false
+      example: "word"
+      default: "char"
+      selector:
+        select:
+          options:
+            - "char"
+            - "word"
+            - "xkcd"
+
+refresh_networks:
+  name: Refresh networks
+  description: huh wha
