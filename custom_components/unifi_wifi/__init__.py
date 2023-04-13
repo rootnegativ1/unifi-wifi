@@ -108,6 +108,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
             CONF_ADDRESS: addresses,
             CONF_NETWORKS: entities
         }
+        _LOGGER.debug("domain entities: %s", hass.states.entity_ids(DOMAIN))
 
     # generate initial files and entities for desired SSIDs
     refresh_all()
@@ -129,7 +130,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
             qr.create(ssid, password)
             _LOGGER.debug("ssid %s has a new password", ssid)
             refresh_all()
-            # SOMEHOW GENERATE/UPDATE SENSOR & CAMERA ENTITIES
+            # SOMEHOW UPDATE SENSOR & CAMERA ENTITIES
 
 
     def random_password_service(call):
@@ -145,7 +146,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
             qr.create(ssid, password)
             _LOGGER.debug("ssid %s has a new password generated using the %s method", ssid, method)
             refresh_all()
-            # SOMEHOW GENERATE/UPDATE SENSOR & CAMERA ENTITIES
+            # SOMEHOW UPDATE SENSOR & CAMERA ENTITIES
 
 
     def refresh_networks_service(call):

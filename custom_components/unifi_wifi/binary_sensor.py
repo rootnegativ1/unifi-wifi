@@ -62,7 +62,7 @@ class UnifiWifiBinarySensor(BinarySensorEntity, RestoreEntity):
         self._name = f"{_ssid} wifi info"
         self._attr_unique_id = f"{DOMAIN}_{self._name}"
         self._attr_has_entity_name = True
-        self.attr = {
+        self._attributes = {
             "ssid": _ssid,
             "unifi_id": _unifi_id,
             "password": _password,
@@ -74,7 +74,7 @@ class UnifiWifiBinarySensor(BinarySensorEntity, RestoreEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
-        return self.attr
+        return self._attributes
 
     @property
     def name(self):
@@ -107,9 +107,9 @@ class UnifiWifiBinarySensor(BinarySensorEntity, RestoreEntity):
             last_state := await self.async_get_last_state()
         ) and last_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
             self._state = last_state.state
-            for attribute in ["ssid", "unifi_id", "password", "qr_text", "timestamp"]:
-                if attribute in last_state.attributes:
-                    self.attr[attribute] = last_state.attributes[attribute]
+            for attr in ["ssid", "unifi_id", "password", "qr_text", "timestamp"]:
+                if attr in last_state.attributes:
+                    self._attributes[attr] = last_state.attributes[attr]
             _LOGGER.debug("Restored: %s", self._name)
         else:
             _LOGGER.debug("Unable to restore: %s", self._name)
@@ -119,7 +119,7 @@ class UnifiWifiBinarySensor(BinarySensorEntity, RestoreEntity):
         #This is the only method that should fetch new data for Home Assistant.
         self._state = self.hass.data[DOMAIN][CONF_NETWORKS][self._index]["enabled"]
         password = self.hass.data[DOMAIN][CONF_NETWORKS][self._index][CONF_PASSWORD]
-        if password != self.attr["password"]:
-            self.attr["password"] = password
-            self.attr["qr_text"] = f"WIFI:T:WPA;S:{self.attr['ssid']};P:{password};;"
-            self.attr["timestamp"] = int(datetime.now().timestamp())
+        if password != self._attributes["password"]:
+            self._attributes["password"] = password
+            self._attributes["qr_text"] = f"WIFI:T:WPA;S:{self._attributes['ssid']};P:{password};;"
+            self._attributes["timestamp"] = int(datetime.now().timestamp())
