@@ -125,7 +125,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
         ind = index(ssid)
         if ind >= 0:
             payload = {"x_passphrase": password}
-            #x.set_wlanconf(ssid, payload)
+            x.set_wlanconf(ssid, payload)
             qr.create(ssid, password)
             _LOGGER.debug("ssid %s has a new password", ssid)
             refresh_all()
@@ -141,7 +141,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
         if ind >= 0:
             password = pw.create(method)
             payload = {"x_passphrase": password}
-            #x.set_wlanconf(ssid, payload)
+            x.set_wlanconf(ssid, payload)
             qr.create(ssid, password)
             _LOGGER.debug("ssid %s has a new password generated using the %s method", ssid, method)
             refresh_all()
