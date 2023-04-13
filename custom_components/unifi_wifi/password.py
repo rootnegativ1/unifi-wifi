@@ -1,9 +1,12 @@
 from xkcdpass import xkcd_password as xp
 import secrets, string
 
+CONF_WORDFILE = '/config/custom_components/unifi_wifi/eff_large_wordlist.txt'
+
 def create(method):
     if method == 'xkcd': # https://github.com/redacted/XKCD-password-generator#using-xkcdpass-as-an-imported-module
-        wordfile = xp.locate_wordfile() # defaults to eff_long
+        #wordfile = xp.locate_wordfile() # defaults to a copy of eff_long contained in xkcdpass python module
+        wordfile = CONF_WORDFILE
         mywords = xp.generate_wordlist(wordfile=wordfile, min_length=5, max_length=8)
         x = xp.generate_xkcdpassword(mywords, numwords=4, delimiter=" ")
 
@@ -13,7 +16,7 @@ def create(method):
         # On standard Linux systems, use a convenient dictionary file.
         # Other platforms may need to provide their own word-list.
         # https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt
-        with open('/config/custom_components/unifi_wifi/eff_large_wordlist.txt') as f:
+        with open(CONF_WORDFILE) as f:
             words = [word.strip() for word in f]
             x = ' '.join(secrets.choice(words) for i in range(4))
 
