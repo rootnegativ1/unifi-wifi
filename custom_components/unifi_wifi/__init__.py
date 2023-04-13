@@ -1,6 +1,7 @@
 """The Unifi Wifi integration."""
 
 import logging
+import re
 import voluptuous as vol
 
 from datetime import datetime
@@ -20,6 +21,7 @@ from . import unifi_api as api
 
 DOMAIN = 'unifi_wifi'
 CONF_BASEURL = 'base_url'
+CONF_BASEURL_REGEX = r"https:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d+"
 CONF_SITE = 'site'
 CONF_UNIFIOS = 'unifi_os'
 CONF_SSID = 'ssid'
@@ -36,9 +38,10 @@ _NETWORKS_SCHEMA = vol.Schema({
     vol.Required(CONF_SSID): cv.string,
 })
 
+
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
-        vol.Required(CONF_BASEURL): cv.string,
+        vol.Required(CONF_BASEURL): cv.matches_regex(CONF_BASEURL_REGEX),
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_SITE, default="default"): cv.string,
