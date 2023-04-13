@@ -31,7 +31,7 @@ unifi_wifi:
 
   IP address and port of the controller. Should be of the form ```https://<ip-address>:<port>```. UniFi OS based controllers must use port 443.
     > **Note**
-    > Currently implemented regex validation: ```https:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d+``` [^2]
+    > Currently implemented regex validation: ```https:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d+``` [^2] [^3]
 
   ---
 
@@ -79,7 +79,7 @@ unifi_wifi:
   | method | no | STRING method to generate password. One of: char, word, or xkcd |
 
   - char --> 24-character alphanumeric string
-  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^3]. This wordfile is located in ```custom_components/unfi_wifi```
+  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^4]. This wordfile is located in ```custom_components/unfi_wifi```
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The main benefit of xkcdpass is having more granular control over the types of words chosen and characters used. Currently, this must be changed in ```custom_components/unfi_wifi/password.py```
 
 ### ```unifi_wifi.refresh_networks```
@@ -91,4 +91,5 @@ unifi_wifi:
 
 [^1]: https://my.home-assistant.io/create-link/
 [^2]: https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp
-[^3]: https://www.eff.org/dice
+[^3]: https://regexr.com/7c1b0
+[^4]: https://www.eff.org/dice
