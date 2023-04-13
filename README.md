@@ -1,7 +1,7 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 # Unifi Wifi Home Assistant Integration
 
-lorem ipsum --> brief introduction and purpose
+Change passwords and generate QR codes for wireless networks on UniFi controllers. The passwords can be custom or randomized using the included services.
 
 ## HACS Installation
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rootnegativ1&repository=unifi_wifi&category=integration) [^1]
