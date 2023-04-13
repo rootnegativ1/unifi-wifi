@@ -32,9 +32,9 @@ unifi_wifi:
 ### Configuration Variables
 **base_url** <sup><sub>string</sub></sup> *REQUIRED*
 
-IP address of the UniFi controller. Do NOT include the port as this is automatically configured based on the *truthiness* of the ```unifi_os``` variable.
+IP address and port of the UniFi controller. Should be of the form ```https://<ip-address>:<port>```
   > **Note**
-  > This integration currently only supports standard ports (i.e. 443 and 8443) as they are hard-coded. Future revisions will ~include a ```port``` variable and the appropriate logic to support it~ require the port to be included in ```base_url```
+  > regex currently used is ```https:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d+```
 ___
 **username** <sup><sub>string</sub></sup> *REQUIRED*
 
@@ -50,7 +50,7 @@ Only use this if you've renamed your site or have multiple sites managed by the 
 ___
 **unifi_os** <sup><sub>boolean</sub></sup> (optional, default: true)
 
-Only use this if you're running controller software separately (i.e. Docker, Raspberry Pi, etc)
+The *truthiness* of this variable is used to determine relative url paths depending on whether or the controller is running UniFi OS. Only use this if you're running controller software separately (i.e. Docker, Raspberry Pi, etc).
 ___
 **networks** <sup><sub>list</sub></sup> (optional)
 
