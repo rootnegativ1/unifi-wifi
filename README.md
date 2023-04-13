@@ -34,7 +34,7 @@ unifi_wifi:
 
 IP address and port of the UniFi controller. Should be of the form ```https://<ip-address>:<port>```
   > **Note**
-  > regex currently used is ```https:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d+```
+  > regex currently used is ```https:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d+``` [^2]
 ___
 **username** <sup><sub>string</sub></sup> *REQUIRED*
 
@@ -71,7 +71,7 @@ ___
   | method | no | STRING method to generate password. One of: char, word, or xkcd |
 
   - char --> 24-character alphanumeric string
-  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^2]
+  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^3]
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass)
 
 ### ```unifi_wifi.refresh_networks```
@@ -81,4 +81,5 @@ ___
 
 lorem ipsum --> needed to refresh changes made directly on the contoller
 [^1]: https://my.home-assistant.io/create-link/
-[^2]: https://www.eff.org/dice
+[^2]: https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp
+[^3]: https://www.eff.org/dice
