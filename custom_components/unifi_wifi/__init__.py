@@ -108,7 +108,6 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
             CONF_ADDRESS: addresses,
             CONF_NETWORKS: entities
         }
-        _LOGGER.debug("domain entities: %s", hass.states.entity_ids(DOMAIN))
 
     # generate initial files and entities for desired SSIDs
     refresh_all()
