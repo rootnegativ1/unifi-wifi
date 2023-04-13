@@ -82,7 +82,7 @@ unifi_wifi:
 
   - char --> 24-character alphanumeric string
   - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^4]. This wordfile is located in ```custom_components/unfi_wifi```
-  - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The main benefit of xkcdpass is having more granular control over the types of words chosen and characters used. Currently, this must be changed in ```custom_components/unfi_wifi/password.py```
+  - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The main benefit of xkcdpass is having more granular control over the length of words chosen and characters used. Currently, this must be changed in ```custom_components/unfi_wifi/password.py```
 
 ### ```unifi_wifi.refresh_networks```
   | Service data attribute | Optional | Description |
