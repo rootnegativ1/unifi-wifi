@@ -9,5 +9,5 @@
     "issue_tracker": "https://github.com/rootnegativ1/unifi-wifi/issues",
     "iot_class": "local_polling",
     "requirements": ["xkcdpass==1.19.3","qrcode==7.4.2"],
-    "version": "0.1.0"
+    "version": "1.0.0"
 }
