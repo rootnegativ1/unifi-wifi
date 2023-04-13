@@ -29,7 +29,7 @@ unifi_wifi:
 ### Configuration Variables
 - **base_url** <sup><sub>string</sub></sup> *REQUIRED*
 
-  IP address and port of the controller. Should be of the form ```https://<ip-address>:<port>```
+  IP address and port of the controller. Should be of the form ```https://<ip-address>:<port>```. UniFi OS based controllers must use port 443.
     > **Note**
     > Currently implemented regex validation: ```https:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d+``` [^2]
 
