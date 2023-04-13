@@ -34,7 +34,7 @@ unifi_wifi:
 
 IP address of the UniFi controller. Do NOT include the port as this is automatically configured based on the *truthiness* of the ```unifi_os``` variable.
   > **Note**
-  > This integration currently only supports standard ports (i.e. 443 and 8443) as they are hard-coded. Future revisions will include a ```port``` variable and the appropriate logic to support it 
+  > This integration currently only supports standard ports (i.e. 443 and 8443) as they are hard-coded. Future revisions will ~include a ```port``` variable and the appropriate logic to support it~ require the port to be included in ```base_url```
 ___
 **username** <sup><sub>string</sub></sup> *REQUIRED*
 
@@ -54,7 +54,7 @@ Only use this if you're running controller software separately (i.e. Docker, Ras
 ___
 **networks** <sup><sub>list</sub></sup> (optional)
 
-Using the ```ssid``` key, any wireless networks included here will have ```binary_sensor``` and ```camera``` entities created. The binary sensor indicates whether the network is enabled (on) or disabled (off) and has additional ssid attributes including name, network id, and password. The camera uses the ```local_file``` integration to display a QR code for joining the wireless network
+Using the ```ssid``` key, any wireless networks included here will have binary sensor and camera entities created. The binary sensor indicates whether the network is enabled (on) or disabled (off) and has additional ssid attributes including name, network id, and password. The camera uses the [local_file](https://www.home-assistant.io/integrations/local_file/) native integration to display a QR code for joining the wireless network
 ___
 
 ## Services
