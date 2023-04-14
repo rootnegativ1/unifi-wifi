@@ -1,5 +1,5 @@
 {
-    "domain": "unifi-wifi",
+    "domain": "unifi_wifi",
     "name": "Unifi Wifi",
     "codeowners": "@rootnegativ1",
     "config_flow": false,
