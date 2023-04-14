@@ -10,7 +10,7 @@ Change passwords and generate QR codes for WLANs on UniFi Network controllers. P
 1. Go to any of the sections (integrations, frontend, automation).
 2. Click on the 3 dots in the top right corner.
 3. Select "Custom repositories"
-4. Add the URL ```https://github.com/rootnegativ1/unifi_wifi``` to the repository.
+4. Add the URL ```https://github.com/rootnegativ1/unifi-wifi``` to the repository.
 5. Select the ```integration``` category.
 6. Click the "ADD" button.
 
