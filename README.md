@@ -1,5 +1,5 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/rootnegativ1/unifi_wifi?color=green&style=for-the-badge)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/rootnegativ1/unifi-wifi?color=green&style=for-the-badge)
 
 # Unifi Wifi Home Assistant Integration
 
