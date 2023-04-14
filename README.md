@@ -3,7 +3,7 @@
 
 # Unifi Wifi Home Assistant Integration
 
-Change passwords and generate QR codes for WLANs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are located in ```/config/www```
+Change passwords and generate QR codes for WLANs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are located in ```/config/www```. Optional binary sensor and camera entities can be generated per network SSID.
 
 ## HACS Installation
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rootnegativ1&repository=unifi-wifi&category=integration) [^1]
