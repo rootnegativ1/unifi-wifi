@@ -1,7 +1,7 @@
 {
     "domain": "unifi_wifi",
     "name": "Unifi Wifi",
-    "codeowners": "@rootnegativ1",
+    "codeowners": ["@rootnegativ1"],
     "config_flow": false,
     "dependencies": [],
     "documentation": "https://github.com/rootnegativ1/unifi-wifi",
