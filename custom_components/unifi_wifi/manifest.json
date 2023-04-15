@@ -1,6 +1,7 @@
 {
     "domain": "unifi_wifi",
     "name": "Unifi Wifi",
+    "after_dependencies": ["local_file"],
     "codeowners": ["@rootnegativ1"],
     "config_flow": false,
     "dependencies": [],
