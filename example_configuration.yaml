@@ -7,8 +7,8 @@ unifi_wifi:
 
 
 automation:
-  - id: 'unifi_guest_wifi'
-    alias: Unifi Guest Wifi
+  - id: 'guest_wifi'
+    alias: Guest Wifi
     description: On the first of each month set a random password for the Guest Wifi
     mode: single
     trigger:
@@ -17,12 +17,13 @@ automation:
     action:
       - service: button.press
         target:
-          entity_id: button.unifi_guest_wifi_random
+          entity_id: button.guest_wifi_random
 
 
 template:
   button:
-    - name: 'Unifi Guest Wifi Random'
+    - name: 'Guest Wifi Random'
+      unique_id: guest_wifi_random
       press:
         - service: unifi_wifi.random_password
           data:
@@ -32,10 +33,11 @@ template:
         - service: homeassistant.update_entity
           data:
             entity_id:
-              - binary_sensor.guest_wifi_info
+              - binary_sensor.guest_wifi
               - camera.guest_wifi
 
-    - name: 'Unifi Guest Wifi Default'
+    - name: 'Guest Wifi Default'
+      unique_id: guest_wifi_default
       press:
         - service: unifi_wifi.custom_password
           data:
@@ -45,30 +47,31 @@ template:
         - service: homeassistant.update_entity
           data:
             entity_id:
-              - binary_sensor.guest_wifi_info
+              - binary_sensor.guest_wifi
               - camera.guest_wifi
 
-    - name: 'Unifi Guest Wifi Custom'
+    - name: 'Guest Wifi Custom'
+      unique_id: guest_wifi_custom
       press:
         - service: unifi_wifi.custom_password
           data:
             ssid: Guest
-            password: "{{states('input_text.unifi_guest_wifi')}}"
+            password: "{{states('input_text.guest_wifi')}}"
         - delay: '00:00:10'
         - service: homeassistant.update_entity
           data:
             entity_id:
-              - binary_sensor.guest_wifi_info
+              - binary_sensor.guest_wifi
               - camera.guest_wifi
         - service: input_text.set_value
           data:
-            entity_id: input_text.unifi_guest_wifi
+            entity_id: input_text.guest_wifi
             value: ''
 
 
 input_text:
-  unifi_guest_wifi:
-    name: unifi_guest_wifi
+  guest_wifi:
+    name: guest_wifi
     initial: ''
     icon: mdi:form-textbox-password
     mode: password

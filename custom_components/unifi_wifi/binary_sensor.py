@@ -59,7 +59,7 @@ class UnifiWifiBinarySensor(BinarySensorEntity, RestoreEntity):
         """Initialize the binary_sensor."""
         self._index = _index
         self._state = _state
-        self._name = f"{_ssid} wifi info"
+        self._name = f"{_ssid} wifi"
         self._attr_unique_id = f"{DOMAIN}_{self._name}"
         self._attr_has_entity_name = True
         self._attributes = {

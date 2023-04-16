@@ -1,0 +1,69 @@
+type: custom:stack-in-card
+cards:
+  - type: grid
+    cards:
+      - type: markdown
+        content: >-
+          ## {{state_attr('binary_sensor.guest_wifi','friendly_name')}} <ha-icon icon="mdi:wifi" />
+
+          ---
+
+          # {{ states.device_tracker | selectattr('state', 'eq', 'home') |
+          selectattr('attributes.essid','defined') |
+          selectattr('attributes.essid', 'eq', "Guest") | list | count }}
+          Clients
+      - type: picture-entity
+        entity: camera.guest_wifi
+        show_state: false
+        show_name: false
+        tap_action:
+          action: url
+          url_path: http://titan.local:8123/local/Guest_wifi_qr.png
+        hold_action:
+          action: call-service
+          service: button.press
+          target:
+            entity_id: button.guest_wifi_default
+          confirmation:
+            text: RESTORE the default Guest wifi password?
+        double_tap_action:
+          action: call-service
+          service: button.press
+          target:
+            entity_id: button.guest_wifi_random
+          confirmation:
+            text: RANDOMIZE the Guest wifi password?
+    columns: 2
+    square: false
+  - type: markdown
+    content: >-
+      # {{ state_attr("sensor.guest_wifi","password") }}
+
+      Last Updated on {{ state_attr("sensor.guest_wifi","timestamp") | int |
+      timestamp_custom("%m/%d/%y at %I:%M %p", True) }}
+
+      *HINT: If it looks like a space, then yes it's a space*
+  - type: custom:text-input-row
+    entity: input_text.guest_wifi
+    name: Custom Password (no spaces)
+  - type: tile
+    entity: button.guest_wifi_custom
+    name: Change Guest wifi password
+    icon: mdi:lock
+    action_name: Update
+    icon_tap_action:
+      action: call-service
+      service: button.press
+      data:
+        entity_id: button.guest_wifi_custom
+      confirmation:
+        text: UPDATE the Guest wifi password?
+card_mod:
+  style: |
+    ha-card {
+      webkit-box-shadow: 0px 3px 6px 3px rgba(0,0,0,0.48);
+      moz-box-shadow: 0px 3px 6px 3px rgba(0,0,0,0.48);
+      box-shadow: 0px 3px 6px 3px rgba(0,0,0,0.48);
+      border-radius: 20px;
+      background-color: rgba(0, 0, 0, 0.5)
+    }
