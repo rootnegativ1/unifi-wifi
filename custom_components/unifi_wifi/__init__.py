@@ -56,7 +56,7 @@ CONFIG_SCHEMA = vol.Schema({
 SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.Schema({
     vol.Required(CONF_SSID): cv.string,
     vol.Required(CONF_PASSWORD): vol.All(
-        cv.string, vol.Length(8,36)
+        cv.string, vol.Length(min=8, max=63)
     ),
 })
 

@@ -1,6 +1,6 @@
 custom_password:
   name: Custom password
-  description: blah blah blah
+  description: change WLAN password on UniFi network to a custom string
   fields:
     ssid:
       name: ssid
@@ -19,7 +19,7 @@ custom_password:
 
 random_password:
   name: Random password
-  description: bleep bloop
+  description: change WLAN password on UniFi network to a randomly generated string
   fields:
     ssid:
       name: ssid
@@ -44,4 +44,4 @@ random_password:
 
 refresh_networks:
   name: Refresh networks
-  description: huh wha
+  description: Update cached WLAN data
