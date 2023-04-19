@@ -41,6 +41,34 @@ random_password:
             - "char"
             - "word"
             - "xkcd"
+    min_word_length:
+      name: min_word_length
+      description: minimum word length [default=5, min=3, max=9]
+      required: false
+      advanced: false
+      example: 3
+      default: 5
+    max_word_length:
+      name: max_word_length
+      description: maximum word length [default=8, min=3, max=9]
+      required: false
+      advanced: false
+      example: 9
+      default: 8
+    word_count:
+      name: word_count
+      description: number of words to generate [default=4, min=3, max=6]
+      required: false
+      advanced: false
+      example: 5
+      default: 4
+    char_count:
+      name: char_count
+      description: number of alphanumeric characters to generate [default=24, min=8, max=63]
+      required: false
+      advanced: false
+      example: 12
+      default: 24
 
 refresh_networks:
   name: Refresh networks

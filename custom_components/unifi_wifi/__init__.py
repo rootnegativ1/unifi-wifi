@@ -1,7 +1,6 @@
 """The Unifi Wifi integration."""
 
 import logging
-import re
 import voluptuous as vol
 
 from datetime import datetime
@@ -27,6 +26,10 @@ CONF_UNIFIOS = 'unifi_os'
 CONF_SSID = 'ssid'
 CONF_NETWORKS = 'networks'
 CONF_UNIFIID = 'unifi_id'
+CONF_MIN_LENGTH = 'min_word_length'
+CONF_MAX_LENGTH = 'max_word_length'
+CONF_WORDS = 'word_count'
+CONF_CHAR = 'char_count'
 SERVICE_CUSTOM_PASSWORD = 'custom_password'
 SERVICE_RANDOM_PASSWORD = 'random_password'
 SERVICE_REFRESH_NETWORKS = 'refresh_networks'
@@ -60,10 +63,31 @@ SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.Schema({
     ),
 })
 
-SERVICE_RANDOM_PASSWORD_SCHEMA = vol.Schema({
-    vol.Required(CONF_SSID): cv.string,
-    vol.Required(CONF_METHOD): vol.In(['xkcd','word','char']),
-})
+def check_word_lengths(obj):
+    if obj[CONF_MIN_LENGTH] > obj[CONF_MAX_LENGTH]:
+        msg = f"{CONF_MIN_LENGTH} ({obj[CONF_MIN_LENGTH]}) must be less than or equal to {CONF_MAX_LENGTH} ({obj[CONF_MAX_LENGTH]})"
+        raise vol.Invalid(msg)
+    return obj
+
+SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
+    vol.Schema({
+        vol.Required(CONF_SSID): cv.string,
+        vol.Required(CONF_METHOD): vol.In(['xkcd','word','char']),
+        vol.Optional(CONF_MIN_LENGTH, default=5): vol.All(
+            vol.Coerce(int), vol.Range(min=3, max=9)
+        ),
+        vol.Optional(CONF_MAX_LENGTH, default=8): vol.All(
+            vol.Coerce(int), vol.Range(min=3, max=9)
+        ),
+        vol.Optional(CONF_WORDS, default=4): vol.All(
+            vol.Coerce(int), vol.Range(min=3, max=6)
+        ),
+        vol.Optional(CONF_CHAR, default=24): vol.All(
+            vol.Coerce(int), vol.Range(min=8, max=63)
+        ),
+    }),
+    check_word_lengths
+)
 
 
 def setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -136,15 +160,20 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
         """Set a randomized password."""
         ssid = call.data.get(CONF_SSID)
         method = call.data.get(CONF_METHOD)
+        min_word_length = call.data.get(CONF_MIN_LENGTH)
+        max_word_length = call.data.get(CONF_MAX_LENGTH)
+        word_count = call.data.get(CONF_WORDS)
+        char_count = call.data.get(CONF_CHAR)
 
         ind = index(ssid)
         if ind >= 0:
-            password = pw.create(method)
+            password = pw.create(method, min_word_length, max_word_length, word_count, char_count)
             payload = {"x_passphrase": password}
             x.set_wlanconf(ssid, payload)
             qr.create(ssid, password)
             _LOGGER.debug("ssid %s has a new password generated using the %s method", ssid, method)
-            refresh_all()
+            _LOGGER.debug("min word length %u, max word length %u, word count %u, char count %u", min_word_length, max_word_length, word_count, char_count)
+            #refresh_all()
             # SOMEHOW UPDATE SENSOR & CAMERA ENTITIES
 
 
