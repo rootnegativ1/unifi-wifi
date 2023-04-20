@@ -82,6 +82,10 @@ unifi_wifi:
   |---|---|---|
   | SSID | no | STRING wireless network whose password you want to change  |
   | method | no | STRING method to generate password. One of: char, word, or xkcd |
+  | min_word_length | yes | minimum word length [default=5, min=3, max=9] |
+  | max_word_length | yes | maximum word length [default=8, min=3, max=9] |
+  | word_count | yes | number of words to generate [default=4, min=3, max=6] |
+  | char_count | yes | number of alphanumeric characters to generate [default=24, min=8, max=63] |
 
   - char --> 24-character alphanumeric string
   - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^4]. This wordfile is located in ```custom_components/unfi_wifi```
