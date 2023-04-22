@@ -1,6 +1,12 @@
+"""QR code images creation function."""
+
+import logging
 import qrcode, qrcode.image.svg
 
-wwwPath = '/config/www/'
+WWW_PATH = '/config/www/'
+
+_LOGGER = logging.getLogger(__name__)
+
 
 def create(ssid, password):
     qrtext = f"WIFI:T:WPA;S:{ssid};P:{password};;"
@@ -16,9 +22,12 @@ def create(ssid, password):
     # GENERATE QR CODE IMAGES
     img_png = qr.make_image(fill_color='black', back_color='white')
     type(img_png)
-    pngPath = f"{wwwPath}{ssid}_wifi_qr.png"
+    pngPath = f"{WWW_PATH}{ssid}_wifi_qr.png"
     img_png.save(pngPath)
+
     img_svg = qr.make_image(fill_color='black', back_color='white', image_factory=qrcode.image.svg.SvgPathImage)
     type(img_svg)
-    svgPath = f"{wwwPath}{ssid}_wifi_qr.svg"
+    svgPath = f"{WWW_PATH}{ssid}_wifi_qr.svg"
     img_svg.save(svgPath)
+
+    _LOGGER.debug("QR code created for ssid: %s", ssid)

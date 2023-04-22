@@ -19,7 +19,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from . import (
     DOMAIN,
     CONF_SSID,
-    CONF_NETWORKS,
+    CONF_MONITORED_NETWORKS,
     CONF_UNIFIID
 )
 
@@ -36,10 +36,10 @@ def setup_platform(
         return
 
     address = hass.data[DOMAIN][CONF_ADDRESS]
-    configured_networks = hass.data[DOMAIN][CONF_NETWORKS]
+    configured_networks = hass.data[DOMAIN][CONF_MONITORED_NETWORKS]
     entities = []
-    for network in configured_networks:
-        ind = address[network[CONF_SSID]]
+    for i in configured_networks:
+        ind = address[i[CONF_SSID]]
         entity = UnifiWifiBinarySensor(
             hass,
             ind,
@@ -117,8 +117,8 @@ class UnifiWifiBinarySensor(BinarySensorEntity, RestoreEntity):
     def update(self) -> None:
         """Fetch new state data for the sensor."""
         #This is the only method that should fetch new data for Home Assistant.
-        self._state = self.hass.data[DOMAIN][CONF_NETWORKS][self._index]["enabled"]
-        password = self.hass.data[DOMAIN][CONF_NETWORKS][self._index][CONF_PASSWORD]
+        self._state = self.hass.data[DOMAIN][CONF_MONITORED_NETWORKS][self._index]["enabled"]
+        password = self.hass.data[DOMAIN][CONF_MONITORED_NETWORKS][self._index][CONF_PASSWORD]
         if password != self._attributes["password"]:
             self._attributes["password"] = password
             self._attributes["qr_text"] = f"WIFI:T:WPA;S:{self._attributes['ssid']};P:{password};;"

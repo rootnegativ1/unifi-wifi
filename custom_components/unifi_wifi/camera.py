@@ -1,11 +1,11 @@
 """Platform for Local File camera integration."""
+
 from __future__ import annotations
 
 import logging
-#import mimetypes
+import mimetypes
 import os
 
-#from homeassistant.components.camera import Camera
 from homeassistant.components.local_file.camera import LocalFile
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
@@ -13,11 +13,12 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from . import (
     DOMAIN,
-    CONF_NETWORKS,
+    CONF_MONITORED_NETWORKS,
     CONF_SSID
     )
 
 _LOGGER = logging.getLogger(__name__)
+
 
 def setup_platform(
     hass: HomeAssistant,
@@ -30,15 +31,15 @@ def setup_platform(
         return
 
     address = hass.data[DOMAIN][CONF_ADDRESS]
-    configured_networks = hass.data[DOMAIN][CONF_NETWORKS]
-    cameras = []
-    for network in configured_networks:
-        ind = address[network[CONF_SSID]]
+    configured_networks = hass.data[DOMAIN][CONF_MONITORED_NETWORKS]
+    entities = []
+    for i in configured_networks:
+        ind = address[i[CONF_SSID]]
         ssid = configured_networks[ind][CONF_SSID]
         name = f"{ssid} wifi"
         file_path = f"/config/www/{ssid}_wifi_qr.png"
-        camera = LocalFile(name, file_path)
+        entity = LocalFile(name, file_path)
         _LOGGER.debug("Setting up camera for ssid: %s", ssid)
-        cameras.append(camera)
+        entities.append(entity)
 
-    add_entities(cameras)
+    add_entities(entities)

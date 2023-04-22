@@ -24,12 +24,13 @@ CONF_BASEURL_REGEX = r"https:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d+"
 CONF_SITE = 'site'
 CONF_UNIFIOS = 'unifi_os'
 CONF_SSID = 'ssid'
-CONF_NETWORKS = 'networks'
+CONF_MONITORED_NETWORKS = 'networks'
 CONF_UNIFIID = 'unifi_id'
 CONF_MIN_LENGTH = 'min_word_length'
 CONF_MAX_LENGTH = 'max_word_length'
 CONF_WORDS = 'word_count'
 CONF_CHAR = 'char_count'
+CONF_METHOD_TYPES = ['xkcd','word','char']
 SERVICE_CUSTOM_PASSWORD = 'custom_password'
 SERVICE_RANDOM_PASSWORD = 'random_password'
 SERVICE_REFRESH_NETWORKS = 'refresh_networks'
@@ -41,7 +42,6 @@ _NETWORKS_SCHEMA = vol.Schema({
     vol.Required(CONF_SSID): cv.string,
 })
 
-
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
         vol.Required(CONF_BASEURL): cv.matches_regex(CONF_BASEURL_REGEX),
@@ -49,7 +49,7 @@ CONFIG_SCHEMA = vol.Schema({
         vol.Required(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_SITE, default="default"): cv.string,
         vol.Optional(CONF_UNIFIOS, default=True): cv.boolean,
-        vol.Optional(CONF_NETWORKS, default=[]): vol.All(
+        vol.Optional(CONF_MONITORED_NETWORKS, default=[]): vol.All(
             cv.ensure_list, [_NETWORKS_SCHEMA]
         ),
     })},
@@ -72,7 +72,7 @@ def check_word_lengths(obj):
 SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
     vol.Schema({
         vol.Required(CONF_SSID): cv.string,
-        vol.Required(CONF_METHOD): vol.In(['xkcd','word','char']),
+        vol.Required(CONF_METHOD): vol.In(CONF_METHOD_TYPES),
         vol.Optional(CONF_MIN_LENGTH, default=5): vol.All(
             vol.Coerce(int), vol.Range(min=3, max=9)
         ),
@@ -112,25 +112,26 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     def refresh_all():
         x.get_wlanconf()
         addresses = {}
-        entities = []
-        for network in config[DOMAIN][CONF_NETWORKS]:
-            ssid = network[CONF_SSID]
+        networks = []
+        for i in config[DOMAIN][CONF_MONITORED_NETWORKS]:
+            ssid = i[CONF_SSID]
             ind = index(ssid)
             password = x.wlanconf[ind]["x_passphrase"]
             qr.create(ssid, password)
-            _LOGGER.debug("QR code created for ssid: %s", ssid)
-            addresses[ssid] = config[DOMAIN][CONF_NETWORKS].index(network)
-            entity = {
+
+            addresses[ssid] = config[DOMAIN][CONF_MONITORED_NETWORKS].index(i)
+
+            network = {
                 CONF_ENABLED: x.wlanconf[ind]["enabled"],
                 CONF_SSID: ssid,
                 CONF_UNIFIID: x.wlanconf[ind]["_id"],
                 CONF_PASSWORD: password
             }
-            entities.append(entity)
+            networks.append(network)
 
         hass.data[DOMAIN] = {
             CONF_ADDRESS: addresses,
-            CONF_NETWORKS: entities
+            CONF_MONITORED_NETWORKS: networks
         }
 
     # generate initial files and entities for desired SSIDs
