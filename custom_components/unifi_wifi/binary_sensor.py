@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.util import slugify
 from . import (
     DOMAIN,
     CONF_SSID,
@@ -60,7 +61,7 @@ class UnifiWifiBinarySensor(BinarySensorEntity, RestoreEntity):
         self._index = _index
         self._state = _state
         self._name = f"{_ssid} wifi"
-        self._attr_unique_id = f"{DOMAIN}_{self._name}"
+        self._attr_unique_id = slugify(f"{DOMAIN}_{self._name}")
         self._attr_has_entity_name = True
         self._attributes = {
             "ssid": _ssid,

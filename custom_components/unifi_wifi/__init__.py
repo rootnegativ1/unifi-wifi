@@ -140,6 +140,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     # INITIALIZE SENSORS
     hass.helpers.discovery.load_platform('binary_sensor', DOMAIN, {}, config)
     hass.helpers.discovery.load_platform('camera', DOMAIN, {}, config)
+    hass.helpers.discovery.load_platform('image', DOMAIN, {}, config)
 
 
     def custom_password_service(call):
@@ -174,7 +175,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
             qr.create(ssid, password)
             _LOGGER.debug("ssid %s has a new password generated using the %s method", ssid, method)
             _LOGGER.debug("min word length %u, max word length %u, word count %u, char count %u", min_word_length, max_word_length, word_count, char_count)
-            #refresh_all()
+            refresh_all()
             # SOMEHOW UPDATE SENSOR & CAMERA ENTITIES
 
 
