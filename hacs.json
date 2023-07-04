@@ -1,4 +1,5 @@
 {
     "name": "Unifi Wifi",
-    "render_readme": false
+    "render_readme": false,
+    "homeassistant": "2023.7.0"
 }
