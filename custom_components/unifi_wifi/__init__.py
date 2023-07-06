@@ -9,7 +9,8 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_METHOD,
     CONF_ADDRESS,
-    CONF_ENABLED
+    CONF_ENABLED,
+    CONF_VERIFY_SSL
     )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
@@ -49,6 +50,7 @@ CONFIG_SCHEMA = vol.Schema({
         vol.Required(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_SITE, default="default"): cv.string,
         vol.Optional(CONF_UNIFIOS, default=True): cv.boolean,
+        vol.Optional(CONF_VERIFY_SSL, default=False): cv.boolean,
         vol.Optional(CONF_MONITORED_NETWORKS, default=[]): vol.All(
             cv.ensure_list, [_NETWORKS_SCHEMA]
         ),
@@ -131,7 +133,8 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
         hass.data[DOMAIN] = {
             CONF_ADDRESS: addresses,
-            CONF_MONITORED_NETWORKS: networks
+            CONF_MONITORED_NETWORKS: networks,
+            CONF_VERIFY_SSL: config[DOMAIN][CONF_VERIFY_SSL]
         }
 
     # generate initial files and entities for desired SSIDs
@@ -139,7 +142,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     # INITIALIZE SENSORS
     hass.helpers.discovery.load_platform('binary_sensor', DOMAIN, {}, config)
-    hass.helpers.discovery.load_platform('camera', DOMAIN, {}, config)
+    # hass.helpers.discovery.load_platform('camera', DOMAIN, {}, config)
     hass.helpers.discovery.load_platform('image', DOMAIN, {}, config)
 
 

@@ -2,6 +2,9 @@ unifi_wifi:
   base_url: !secret unifi_baseurl
   username: !secret unifi_username
   password: !secret unifi_password
+  # site: default
+  # unifi_os: true
+  # verify_ssl: false
   networks:
     - ssid: Guest
 
@@ -34,7 +37,7 @@ template:
           data:
             entity_id:
               - binary_sensor.guest_wifi
-              - camera.guest_wifi
+              - image.guest_wifi
 
     - name: 'Guest Wifi Default'
       unique_id: guest_wifi_default
@@ -48,7 +51,7 @@ template:
           data:
             entity_id:
               - binary_sensor.guest_wifi
-              - camera.guest_wifi
+              - image.guest_wifi
 
     - name: 'Guest Wifi Custom'
       unique_id: guest_wifi_custom
@@ -62,7 +65,7 @@ template:
           data:
             entity_id:
               - binary_sensor.guest_wifi
-              - camera.guest_wifi
+              - image.guest_wifi
         - service: input_text.set_value
           data:
             entity_id: input_text.guest_wifi

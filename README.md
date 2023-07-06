@@ -3,7 +3,7 @@
 
 # Unifi Wifi Home Assistant Integration
 
-Change passwords and generate QR codes for WLANs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are located in ```/config/www```. Optional binary sensor, camera and image entities can be generated per network SSID.
+Change passwords and generate QR codes for WLANs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are located in ```/config/www```. Optional binary sensor and image entities can be generated per network SSID.
 
 ## Manual Installation
 Download the contents of ```custom_components``` to your ```/config/custom_components``` directory
@@ -26,7 +26,8 @@ unifi_wifi:
   username: local.admin
   password: NotARealPassword
   site: unclebuckshouse
-  unifi_os: false
+  unifi_os: true
+  verify_ssl: false
   networks:
     - ssid: my-wireless-network
 ```
@@ -64,9 +65,15 @@ unifi_wifi:
 
   ---
 
+- **verify_ssl** <sup><sub>boolean</sub></sup> (optional, default: false)
+
+  The *truthiness* of this variable is used to enable or disable SSL certificate verification. Set to false (or omit) if your Home Assistant instance uses an http-only URL, or you have a self-signed SSL certificate and haven’t installed the CA certificate to enable verification. Otherwise set to true.
+
+  ---
+
 - **networks** <sup><sub>list</sub></sup> (optional)
 
-  Using the ```ssid``` key, any wireless networks included here will have binary sensor and camera entities created. The binary sensor indicates whether the network is enabled (on) or disabled (off) and has additional attributes including ssid name, network id, and password. The camera uses the [local_file](https://www.home-assistant.io/integrations/local_file/) native integration to display a QR code for joining the wireless network.
+  Using the ```ssid``` key, any wireless networks included here will have binary sensor and image entities created. The binary sensor indicates whether the network is enabled (on) or disabled (off) and has additional attributes including ssid name, network id, and password. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network.
 
   ---
 
@@ -96,7 +103,7 @@ unifi_wifi:
   |---|---|---|
   | none | | |
 
-  Whenever WLAN settings (i.e. passwords) are changed directly on the controller, use this service to update the binary sensor and camera entities
+  Whenever WLAN settings (i.e. passwords) are changed directly on the controller, use this service to update the binary sensor and image entities
 
 [^1]: https://my.home-assistant.io/create-link/
 [^2]: https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp
