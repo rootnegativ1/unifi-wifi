@@ -4,7 +4,7 @@
     "after_dependencies": [],
     "codeowners": ["@rootnegativ1"],
     "config_flow": false,
-    "dependencies": ["binary_sensor","image"],
+    "dependencies": ["binary_sensor","image","local_file"],
     "documentation": "https://github.com/rootnegativ1/unifi-wifi",
     "integration_type": "hub",
     "iot_class": "local_polling",
