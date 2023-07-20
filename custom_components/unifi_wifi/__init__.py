@@ -160,13 +160,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         ssid = call.data.get(CONF_SSID)
         password = call.data.get(CONF_PASSWORD)
 
-        ind = _controller_index(controller)
-        valid = _validate_ssid(controller, ssid)
         # password is already validated as a string in SERVICE_RANDOM_PASSWORD_SCHEMA
         # should it be further validated as alphanumeric?
         #    https://docs.python.org/3/library/stdtypes.html#str.isalnum
 
-        if valid:
+        if _validate_ssid(controller, ssid):
             payload = {UNIFI_PASSWORD: password}
             await coordinators[ind].set_wlanconf(ssid, payload)
 
@@ -181,9 +179,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         word_count = call.data.get(CONF_WORD_COUNT)
         char_count = call.data.get(CONF_CHAR_COUNT)
 
-        ind = _controller_index(controller)
-        _validate_ssid(controller, ssid)
-
         if _delimiter == 'space':
             delimiter = ' '
         elif _delimiter == 'dash':
@@ -193,11 +188,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         else:
             raise ValueError(f"invalid delimiter option ({_delimiter})")
         
-        password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
-
-        payload = {UNIFI_PASSWORD: password}
-        _LOGGER.debug("Payload is %s", payload)
-        # await coordinators[ind].set_wlanconf(ssid, payload)
+        if _validate_ssid(controller, ssid):
+            password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
+            payload = {UNIFI_PASSWORD: password}
+            await coordinators[ind].set_wlanconf(ssid, payload)
 
     async def enable_wlan_service(call):
         controller = call.data.get(CONF_CONTROLLER_NAME)
