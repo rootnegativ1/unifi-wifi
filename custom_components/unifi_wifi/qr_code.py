@@ -1,14 +1,11 @@
 """QR code images creation function."""
 
-import logging
-import qrcode, qrcode.image.svg
+import qrcode
 
-WWW_PATH = '/config/www'
-
-_LOGGER = logging.getLogger(__name__)
+IMG_PATH = '/config/www'
 
 
-def create(ssid, password):
+def create(controller_name, site_name, ssid, password):
     qrtext = f"WIFI:T:WPA;S:{ssid};P:{password};;"
 
     qr = qrcode.QRCode(
@@ -19,15 +16,13 @@ def create(ssid, password):
     qr.add_data(qrtext)
     qr.make(fit=True)
 
-    # GENERATE QR CODE IMAGES
+    # GENERATE QR CODE IMAGE(s)
     img_png = qr.make_image(fill_color='black', back_color='white')
     type(img_png)
-    pngPath = f"{WWW_PATH}/{ssid}_wifi_qr.png"
+    pngPath = f"{IMG_PATH}/{controller_name}_{site_name}_{ssid}_wifi_qr.png"
     img_png.save(pngPath)
 
-    img_svg = qr.make_image(fill_color='black', back_color='white', image_factory=qrcode.image.svg.SvgPathImage)
-    type(img_svg)
-    svgPath = f"{WWW_PATH}/{ssid}_wifi_qr.svg"
-    img_svg.save(svgPath)
-
-    _LOGGER.debug("QR code created for ssid: %s", ssid)
+    # img_svg = qr.make_image(fill_color='black', back_color='white', image_factory=qrcode.image.svg.SvgPathImage)
+    # type(img_svg)
+    # svgPath = f"{IMG_PATH}/{controller_name}_{site_name}_{ssid}_wifi_qr.svg"
+    # img_svg.save(svgPath)

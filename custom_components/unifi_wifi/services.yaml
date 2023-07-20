@@ -1,75 +1,144 @@
+# https://developers.home-assistant.io/docs/dev_101_services
+# https://www.home-assistant.io/docs/blueprint/selectors
 custom_password:
-  name: Custom password
-  description: change WLAN password on UniFi network to a custom string
+  name: Custom Password
+  description: Change WLAN password on UniFi network to a custom string
   fields:
+    controller_name:
+      name: Controller
+      description: Name of the controller as defined in YAML
+      required: true
+      example: "myhouse"
+      # default: "myhouse"
+      selector:
+        text:
     ssid:
-      name: ssid
-      description: wireless network whose password you want to change
+      name: SSID
+      description: Wireless network whose password you want to change
       required: true
-      advanced: false
       example: "Guest"
-      default: "Guest"
+      # default: "Guest"
+      selector:
+        text:
     password:
-      name: password
-      description: set a user-provided password
+      name: Password
+      description: User-provided password
       required: true
-      advanced: false
-      example: "12345678"
-      default: "12345678"
+      selector:
+        text:
 
 random_password:
-  name: Random password
-  description: change WLAN password on UniFi network to a randomly generated string
+  name: Random Password
+  description: Change WLAN password on UniFi network to a randomly generated string
   fields:
+    controller_name:
+      name: Controller
+      description: Name of the controller as defined in YAML
+      required: true
+      example: "myhouse"
+      # default: "myhouse"
+      selector:
+        text:
     ssid:
-      name: ssid
-      description: wireless network whose password you want to change
+      name: SSID
+      description: Wireless network whose password you want to change
       required: true
-      advanced: false
       example: "Guest"
-      default: "Guest"
+      # default: "Guest"
+      selector:
+        text:
     method:
-      name: method
-      description: "method to generate password. One of: char, word, or xkcd"
+      name: Method
+      description: char = alphanumeric string (no spaces); word = diceware passphrase (space separated); xkcd = diceware passphrase using XKCD generator (space separated)
       required: true
-      advanced: false
       example: "word"
-      default: "char"
+      # default: "word"
       selector:
         select:
           options:
             - "char"
             - "word"
             - "xkcd"
-    min_word_length:
-      name: min_word_length
-      description: minimum word length [default=5, min=3, max=9]
+          mode: dropdown
+    delimiter:
+      name: Delimiter (xkcd only)
+      description: ???
+      required: true
+      example: "space"
+      # default: "space"
+      selector:
+        select:
+          options:
+            - "space"
+            - "dash"
+            - "none"
+          mode: dropdown
+    min_length:
+      name: Min Length (xkcd only)
+      description: Minimum word length (default=5, min=3, max=9)
       required: false
-      advanced: false
-      example: 3
-      default: 5
-    max_word_length:
-      name: max_word_length
-      description: maximum word length [default=8, min=3, max=9]
-      required: false
-      advanced: false
-      example: 9
-      default: 8
-    word_count:
-      name: word_count
-      description: number of words to generate [default=4, min=3, max=6]
-      required: false
-      advanced: false
       example: 5
-      default: 4
-    char_count:
-      name: char_count
-      description: number of alphanumeric characters to generate [default=24, min=8, max=63]
+      # default: 5
+      selector:
+        number:
+          min: 3
+          max: 9
+    max_length:
+      name: Max Length (xkcd only)
+      description: Maximum word length (default=8, min=3, max=9)
       required: false
-      advanced: false
-      example: 12
-      default: 24
+      example: 8
+      # default: 8
+      selector:
+        number:
+          min: 3
+          max: 9
+    word_count:
+      name: Word Count (xkcd & word)
+      description: Number of words to generate (default=4, min=3, max=6)
+      required: false
+      example: 4
+      # default: 4
+      selector:
+        number:
+          min: 3
+          max: 6
+    char_count:
+      name: Character Count (char only)
+      description: Number of alphanumeric characters to generate (default=24, min=8, max=63)
+      required: false
+      example: 24
+      # default: 24
+      selector:
+        number:
+          min: 8
+          max: 63
 
-refresh_networks:
-  name: Refresh networks
-  description: Update cached WLAN data
+enable_wlan:
+  name: Enable/Disable WLANs
+  description: Enable (or disable) a specific WLAN on a UniFi network
+  fields:
+    controller_name:
+      name: Controller
+      description: Name of the controller as defined in YAML
+      required: true
+      example: "myhouse"
+      # default: "myhouse"
+      selector:
+        text:
+    ssid:
+      name: SSID
+      description: Wireless network you want to toggle
+      required: true
+      example: "Guest"
+      # default: "Guest"
+      selector:
+        text:
+    enabled:
+      name: Enabled
+      description: Set the enable state
+      required: true
+      example: true
+      # default: true
+      selector:
+        boolean:

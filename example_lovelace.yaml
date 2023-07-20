@@ -4,7 +4,7 @@ cards:
     cards:
       - type: markdown
         content: >-
-          ## {{state_attr('binary_sensor.guest_wifi','friendly_name')}} <ha-icon icon="mdi:wifi" />
+          ## {{state_attr('image.guest_wifi','friendly_name')}} <ha-icon icon="mdi:wifi" />
 
           ---
 
@@ -13,12 +13,9 @@ cards:
           selectattr('attributes.essid', 'eq', "Guest") | list | count }}
           Clients
       - type: picture-entity
-        entity: camera.guest_wifi
+        entity: image.guest_wifi
         show_state: false
         show_name: false
-        tap_action:
-          action: url
-          url_path: http://titan.local:8123/local/Guest_wifi_qr.png
         hold_action:
           action: call-service
           service: button.press
@@ -37,9 +34,9 @@ cards:
     square: false
   - type: markdown
     content: >-
-      # {{ state_attr("sensor.guest_wifi","password") }}
+      # {{ state_attr("image.guest_wifi","password") }}
 
-      Last Updated on {{ state_attr("sensor.guest_wifi","timestamp") | int |
+      Last Updated on {{ state_attr("image.guest_wifi","timestamp") | int |
       timestamp_custom("%m/%d/%y at %I:%M %p", True) }}
 
       *HINT: If it looks like a space, then yes it's a space*

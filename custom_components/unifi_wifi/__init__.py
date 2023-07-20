@@ -1,71 +1,93 @@
 """The Unifi Wifi integration."""
 
-import logging
+import logging, aiohttp, asyncio
 import voluptuous as vol
 
 from datetime import datetime
 from homeassistant.const import (
-    CONF_USERNAME,
-    CONF_PASSWORD,
-    CONF_METHOD,
-    CONF_ADDRESS,
     CONF_ENABLED,
-    CONF_VERIFY_SSL
-    )
+    CONF_METHOD,
+    CONF_NAME,
+    CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
+    CONF_USERNAME,
+    CONF_VERIFY_SSL,
+)
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.util import slugify
+from .const import (
+    DOMAIN,
+    CONF_BASEURL,
+    CONF_BASEURL_REGEX,
+    CONF_CHAR_COUNT,
+    CONF_CONTROLLER_NAME,
+    CONF_DELIMITER,
+    CONF_DELIMITER_TYPES,
+    CONF_MAX_LENGTH,
+    CONF_METHOD_TYPES,
+    CONF_MIN_LENGTH,
+    CONF_MONITORED_SSIDS,
+    CONF_SITE,
+    CONF_SSID,
+    CONF_UNIFI_OS,
+    CONF_WORD_COUNT,
+    SERVICE_CUSTOM_PASSWORD,
+    SERVICE_RANDOM_PASSWORD,
+    SERVICE_ENABLE_WLAN,
+    UNIFI_NAME,
+    UNIFI_PASSWORD
+)
+from . import unifi
 from . import password as pw
-from . import qr_code as qr
-from . import unifi_api as api
 
-DOMAIN = 'unifi_wifi'
-CONF_BASEURL = 'base_url'
-CONF_BASEURL_REGEX = r"https:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d+"
-CONF_SITE = 'site'
-CONF_UNIFIOS = 'unifi_os'
-CONF_SSID = 'ssid'
-CONF_MONITORED_NETWORKS = 'networks'
-CONF_UNIFIID = 'unifi_id'
-CONF_MIN_LENGTH = 'min_word_length'
-CONF_MAX_LENGTH = 'max_word_length'
-CONF_WORDS = 'word_count'
-CONF_CHAR = 'char_count'
-CONF_METHOD_TYPES = ['xkcd','word','char']
-SERVICE_CUSTOM_PASSWORD = 'custom_password'
-SERVICE_RANDOM_PASSWORD = 'random_password'
-SERVICE_REFRESH_NETWORKS = 'refresh_networks'
 
 _LOGGER = logging.getLogger(__name__)
 
 
-_NETWORKS_SCHEMA = vol.Schema({
-    vol.Required(CONF_SSID): cv.string,
+_SSID_SCHEMA = vol.Schema({
+    vol.Required(CONF_NAME): cv.string,
 })
 
+_SITE_SCHEMA = vol.Schema({
+    vol.Required(CONF_CONTROLLER_NAME): cv.string,
+    vol.Required(CONF_SITE): cv.string,
+    vol.Required(CONF_BASEURL): cv.matches_regex(CONF_BASEURL_REGEX),
+    vol.Required(CONF_USERNAME): cv.string,
+    vol.Required(CONF_PASSWORD): cv.string,
+    vol.Optional(CONF_SCAN_INTERVAL, default=600): cv.time_period,
+    vol.Optional(CONF_UNIFI_OS, default=True): cv.boolean,
+    vol.Optional(CONF_VERIFY_SSL, default=False): cv.boolean,
+    vol.Optional(CONF_MONITORED_SSIDS, default=[]): vol.All(
+        cv.ensure_list, [_SSID_SCHEMA]
+    ),
+})
+
+def _unique_controller_names(obj):
+    names = [slugify(conf[CONF_CONTROLLER_NAME]) for conf in obj]
+    msg = f"Duplicate controller_name values are not allowed: {names}"
+    vol.Unique(msg)(names)
+    return obj
+
 CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Required(CONF_BASEURL): cv.matches_regex(CONF_BASEURL_REGEX),
-        vol.Required(CONF_USERNAME): cv.string,
-        vol.Required(CONF_PASSWORD): cv.string,
-        vol.Optional(CONF_SITE, default="default"): cv.string,
-        vol.Optional(CONF_UNIFIOS, default=True): cv.boolean,
-        vol.Optional(CONF_VERIFY_SSL, default=False): cv.boolean,
-        vol.Optional(CONF_MONITORED_NETWORKS, default=[]): vol.All(
-            cv.ensure_list, [_NETWORKS_SCHEMA]
-        ),
-    })},
+    DOMAIN: vol.All(
+        cv.ensure_list, [_SITE_SCHEMA], _unique_controller_names,
+    )},
     extra=vol.ALLOW_EXTRA,
 )
 
 SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.Schema({
+    vol.Required(CONF_CONTROLLER_NAME): cv.string,
     vol.Required(CONF_SSID): cv.string,
     vol.Required(CONF_PASSWORD): vol.All(
         cv.string, vol.Length(min=8, max=63)
     ),
 })
 
-def check_word_lengths(obj):
+def _check_word_lengths(obj):
     if obj[CONF_MIN_LENGTH] > obj[CONF_MAX_LENGTH]:
         msg = f"{CONF_MIN_LENGTH} ({obj[CONF_MIN_LENGTH]}) must be less than or equal to {CONF_MAX_LENGTH} ({obj[CONF_MAX_LENGTH]})"
         raise vol.Invalid(msg)
@@ -73,138 +95,140 @@ def check_word_lengths(obj):
 
 SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
     vol.Schema({
+        vol.Required(CONF_CONTROLLER_NAME): cv.string,
         vol.Required(CONF_SSID): cv.string,
         vol.Required(CONF_METHOD): vol.In(CONF_METHOD_TYPES),
+        vol.Optional(CONF_DELIMITER, default='space'): vol.In(CONF_DELIMITER_TYPES),
         vol.Optional(CONF_MIN_LENGTH, default=5): vol.All(
             vol.Coerce(int), vol.Range(min=3, max=9)
         ),
         vol.Optional(CONF_MAX_LENGTH, default=8): vol.All(
             vol.Coerce(int), vol.Range(min=3, max=9)
         ),
-        vol.Optional(CONF_WORDS, default=4): vol.All(
+        vol.Optional(CONF_WORD_COUNT, default=4): vol.All(
             vol.Coerce(int), vol.Range(min=3, max=6)
         ),
-        vol.Optional(CONF_CHAR, default=24): vol.All(
+        vol.Optional(CONF_CHAR_COUNT, default=24): vol.All(
             vol.Coerce(int), vol.Range(min=8, max=63)
         ),
     }),
-    check_word_lengths
+    _check_word_lengths
 )
 
+SERVICE_ENABLE_WLAN_SCHEMA = vol.Schema({
+    vol.Required(CONF_CONTROLLER_NAME): cv.string,
+    vol.Required(CONF_SSID): cv.string,
+    vol.Required(CONF_ENABLED): cv.boolean,
+})
 
-def setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    x = api.Controller(
-        config[DOMAIN][CONF_BASEURL],
-        config[DOMAIN][CONF_USERNAME],
-        config[DOMAIN][CONF_PASSWORD],
-        config[DOMAIN][CONF_SITE],
-        config[DOMAIN][CONF_UNIFIOS]
-    )
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
-    def index(ssid):
-        x.get_wlanconf() # update x.wlanconf
-        for network in x.wlanconf:
-            if network["name"] == ssid:
-                ind = x.wlanconf.index(network)
-                #_LOGGER.debug("ssid %s found at index %u", ssid, ind)
-                return ind
-        _LOGGER.error("ssid %s does not exist", ssid)
-        return -1
+    # define individual controllers (DataUpdateCoordinators)
+    coordinators = [unifi.UnifiWifiController(hass, conf) for conf in config[DOMAIN]]
+    hass.data[DOMAIN] = config[DOMAIN]
 
-    def refresh_all():
-        x.get_wlanconf()
-        addresses = {}
-        networks = []
-        for i in config[DOMAIN][CONF_MONITORED_NETWORKS]:
-            ssid = i[CONF_SSID]
-            ind = index(ssid)
-            password = x.wlanconf[ind]["x_passphrase"]
-            qr.create(ssid, password)
-
-            addresses[ssid] = config[DOMAIN][CONF_MONITORED_NETWORKS].index(i)
-
-            network = {
-                CONF_ENABLED: x.wlanconf[ind]["enabled"],
-                CONF_SSID: ssid,
-                CONF_UNIFIID: x.wlanconf[ind]["_id"],
-                CONF_PASSWORD: password
-            }
-            networks.append(network)
-
-        hass.data[DOMAIN] = {
-            CONF_ADDRESS: addresses,
-            CONF_MONITORED_NETWORKS: networks,
-            CONF_VERIFY_SSL: config[DOMAIN][CONF_VERIFY_SSL]
-        }
-
-    # generate initial files and entities for desired SSIDs
-    refresh_all()
-
-    # INITIALIZE SENSORS
-    hass.helpers.discovery.load_platform('binary_sensor', DOMAIN, {}, config)
-    # hass.helpers.discovery.load_platform('camera', DOMAIN, {}, config)
-    hass.helpers.discovery.load_platform('image', DOMAIN, {}, config)
+    # create image entities (CoordinatorEntities)
+    hass.async_create_task(async_load_platform(hass, 'image', DOMAIN, coordinators, config))
 
 
-    def custom_password_service(call):
+    def _controller_index(controller):
+        """Find the array index of a specific controller within the DataUpdateCoordinators."""
+        for x in coordinators:
+            if x.controller_name == controller:
+                return coordinators.index(x)
+        # ELSE
+        raise ValueError(f"The controller {controller} is not configured in YAML")
+
+    def _validate_ssid(controller, ssid) -> bool:
+        """ Check if an ssid exists on specified controller."""
+        ind = _controller_index(controller)
+
+        # https://github.com/home-assistant/core/blob/dev/homeassistant/core.py#L423
+        # NOT SURE IF this should be async_refresh() or async_request_refresh()
+        hass.add_job(coordinators[ind].async_request_refresh())
+
+        for x in coordinators[ind].wlanconf:
+            if x[UNIFI_NAME] == ssid:
+                return True
+        # ELSE
+        raise ValueError(f"The SSID {ssid} does not exist on controller {controller}")
+        return False
+
+    async def custom_password_service(call):
         """Set a custom password."""
+        controller = call.data.get(CONF_CONTROLLER_NAME)
         ssid = call.data.get(CONF_SSID)
         password = call.data.get(CONF_PASSWORD)
 
-        ind = index(ssid)
-        if ind >= 0:
-            payload = {"x_passphrase": password}
-            x.set_wlanconf(ssid, payload)
-            qr.create(ssid, password)
-            _LOGGER.debug("ssid %s has a new password", ssid)
-            refresh_all()
-            # SOMEHOW UPDATE SENSOR & CAMERA ENTITIES
+        ind = _controller_index(controller)
+        valid = _validate_ssid(controller, ssid)
+        # password is already validated as a string in SERVICE_RANDOM_PASSWORD_SCHEMA
+        # should it be further validated as alphanumeric?
+        #    https://docs.python.org/3/library/stdtypes.html#str.isalnum
 
+        if valid:
+            payload = {UNIFI_PASSWORD: password}
+            await coordinators[ind].set_wlanconf(ssid, payload)
 
-    def random_password_service(call):
+    async def random_password_service(call):
         """Set a randomized password."""
+        controller = call.data.get(CONF_CONTROLLER_NAME)
         ssid = call.data.get(CONF_SSID)
         method = call.data.get(CONF_METHOD)
-        min_word_length = call.data.get(CONF_MIN_LENGTH)
-        max_word_length = call.data.get(CONF_MAX_LENGTH)
-        word_count = call.data.get(CONF_WORDS)
-        char_count = call.data.get(CONF_CHAR)
+        _delimiter = call.data.get(CONF_DELIMITER)
+        min_length = call.data.get(CONF_MIN_LENGTH)
+        max_length = call.data.get(CONF_MAX_LENGTH)
+        word_count = call.data.get(CONF_WORD_COUNT)
+        char_count = call.data.get(CONF_CHAR_COUNT)
 
-        ind = index(ssid)
-        if ind >= 0:
-            password = pw.create(method, min_word_length, max_word_length, word_count, char_count)
-            payload = {"x_passphrase": password}
-            x.set_wlanconf(ssid, payload)
-            qr.create(ssid, password)
-            _LOGGER.debug("ssid %s has a new password generated using the %s method", ssid, method)
-            _LOGGER.debug("min word length %u, max word length %u, word count %u, char count %u", min_word_length, max_word_length, word_count, char_count)
-            refresh_all()
-            # SOMEHOW UPDATE SENSOR & CAMERA ENTITIES
+        ind = _controller_index(controller)
+        _validate_ssid(controller, ssid)
 
+        if _delimiter == 'space':
+            delimiter = ' '
+        elif _delimiter == 'dash':
+            delimiter = '-'
+        elif _delimiter == 'none':
+            delimiter = ''
+        else:
+            raise ValueError(f"invalid delimiter option ({_delimiter})")
+        
+        password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
 
-    def refresh_networks_service(call):
-        """Refresh network info."""
-        refresh_all()
+        payload = {UNIFI_PASSWORD: password}
+        _LOGGER.debug("Payload is %s", payload)
+        # await coordinators[ind].set_wlanconf(ssid, payload)
 
+    async def enable_wlan_service(call):
+        controller = call.data.get(CONF_CONTROLLER_NAME)
+        ssid = call.data.get(CONF_SSID)
+        enabled = call.data.get(CONF_ENABLED)
 
-    hass.services.register(
+        ind = _controller_index(controller)
+        _validate_ssid(controller, ssid)
+
+        payload = {'enabled': str(enabled).lower()}
+        await coordinators[ind].set_wlanconf(ssid, payload)
+
+    hass.services.async_register(
         DOMAIN,
         SERVICE_CUSTOM_PASSWORD,
         custom_password_service,
         schema=SERVICE_CUSTOM_PASSWORD_SCHEMA
     )
 
-    hass.services.register(
+    hass.services.async_register(
         DOMAIN,
         SERVICE_RANDOM_PASSWORD,
         random_password_service,
         schema=SERVICE_RANDOM_PASSWORD_SCHEMA
     )
 
-    hass.services.register(
+    hass.services.async_register(
         DOMAIN,
-        SERVICE_REFRESH_NETWORKS,
-        refresh_networks_service
+        SERVICE_ENABLE_WLAN,
+        enable_wlan_service,
+        schema=SERVICE_ENABLE_WLAN_SCHEMA
     )
 
     return True

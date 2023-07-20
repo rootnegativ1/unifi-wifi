@@ -1,16 +1,23 @@
 unifi_wifi:
-  base_url: !secret unifi_baseurl
-  username: !secret unifi_username
-  password: !secret unifi_password
-  # site: default
-  # unifi_os: true
-  # verify_ssl: false
-  networks:
-    - ssid: Guest
+  - controller_name: myhouse
+    site: default
+    scan_interval: 300
+    base_url: !secret unifi_baseurl
+    username: !secret unifi_username
+    password: !secret unifi_password
+    unifi_os: true
+    verify_ssl: false
+    monitored_ssids:
+      - name: Guest
+
+
+# logger:
+  # logs:
+    # custom_components.unifi_wifi_next: debug
 
 
 automation:
-  - id: 'guest_wifi'
+  - id: 'guest_wifi_monthly_random_password'
     alias: Guest Wifi
     description: On the first of each month set a random password for the Guest Wifi
     mode: single
@@ -28,44 +35,29 @@ template:
     - name: 'Guest Wifi Random'
       unique_id: guest_wifi_random
       press:
-        - service: unifi_wifi.random_password
+        - service: unifi_wifi_next.random_password
           data:
+            controller_name: myhouse
             ssid: Guest
             method: word
-        - delay: '00:00:10'
-        - service: homeassistant.update_entity
-          data:
-            entity_id:
-              - binary_sensor.guest_wifi
-              - image.guest_wifi
 
     - name: 'Guest Wifi Default'
       unique_id: guest_wifi_default
       press:
         - service: unifi_wifi.custom_password
           data:
+            controller_name: myhouse
             ssid: Guest
-            password: "weinerschnitzel"
-        - delay: '00:00:10'
-        - service: homeassistant.update_entity
-          data:
-            entity_id:
-              - binary_sensor.guest_wifi
-              - image.guest_wifi
+            password: "TumbleWeed5"
 
     - name: 'Guest Wifi Custom'
       unique_id: guest_wifi_custom
       press:
         - service: unifi_wifi.custom_password
           data:
+            controller_name: myhouse
             ssid: Guest
             password: "{{states('input_text.guest_wifi')}}"
-        - delay: '00:00:10'
-        - service: homeassistant.update_entity
-          data:
-            entity_id:
-              - binary_sensor.guest_wifi
-              - image.guest_wifi
         - service: input_text.set_value
           data:
             entity_id: input_text.guest_wifi
