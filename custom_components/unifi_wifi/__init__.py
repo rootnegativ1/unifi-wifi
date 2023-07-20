@@ -139,10 +139,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         # ELSE
         raise ValueError(f"The controller {controller} is not configured in YAML")
 
-    def _validate_ssid(controller, ssid) -> bool:
+    def _validate_ssid(ind, ssid) -> bool:
         """ Check if an ssid exists on specified controller."""
-        ind = _controller_index(controller)
-
         # https://github.com/home-assistant/core/blob/dev/homeassistant/core.py#L423
         # NOT SURE IF this should be async_refresh() or async_request_refresh()
         hass.add_job(coordinators[ind].async_request_refresh())
@@ -151,7 +149,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             if x[UNIFI_NAME] == ssid:
                 return True
         # ELSE
-        raise ValueError(f"The SSID {ssid} does not exist on controller {controller}")
+        raise ValueError(f"The SSID {ssid} does not exist on controller {coordinators[ind].controller_name}")
         return False
 
     async def custom_password_service(call):
@@ -164,7 +162,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         # should it be further validated as alphanumeric?
         #    https://docs.python.org/3/library/stdtypes.html#str.isalnum
 
-        if _validate_ssid(controller, ssid):
+        ind = _controller_index(controller)
+        if _validate_ssid(ind, ssid):
             payload = {UNIFI_PASSWORD: password}
             await coordinators[ind].set_wlanconf(ssid, payload)
 
@@ -187,8 +186,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             delimiter = ''
         else:
             raise ValueError(f"invalid delimiter option ({_delimiter})")
-        
-        if _validate_ssid(controller, ssid):
+
+        ind = _controller_index(controller)
+        if _validate_ssid(ind, ssid):
             password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
             payload = {UNIFI_PASSWORD: password}
             await coordinators[ind].set_wlanconf(ssid, payload)
