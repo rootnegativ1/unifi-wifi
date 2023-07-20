@@ -4,7 +4,7 @@
 
 # Unifi Wifi Home Assistant Integration
 
-Change passwords and generate QR codes for WLANs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are located in ```/config/www```. Optional binary sensor and image entities can be generated per network SSID.
+Change passwords and generate QR codes for WLANs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are represented as image entities and can be generated per network SSID. These images are located in ```/config/www```. If a password is changed through the controller-side web UI, the associated QR code in Home Assistant is automatically updated (based on scan_interval).
 
 ## Manual Installation
 Download the contents of ```custom_components``` to your ```/config/custom_components``` directory
@@ -23,17 +23,31 @@ To enable this component in your installation, add the following to your configu
 ```yaml
 # Example configuration.yaml entry
 unifi_wifi:
-  base_url: https://192.168.1.1:443
-  username: local.admin
-  password: NotARealPassword
-  site: unclebuckshouse
-  unifi_os: true
-  verify_ssl: false
-  networks:
-    - ssid: my-wireless-network
+  - controller_name: myhouse
+    site: default
+    base_url: https://192.168.1.1:443
+    username: local.admin
+    password: NotARealPassword
+    scan_interval: 300
+    unifi_os: true
+    verify_ssl: false
+    networks:
+      - name: my-wireless-network
 ```
 
 ### Configuration Variables
+- **controller_name** <sup><sub>string</sub></sup> *REQUIRED*
+
+  blah blah blah
+
+  ---
+
+- **site** <sup><sub>string</sub></sup> *REQUIRED*
+
+  blah blah blah
+
+  ---
+
 - **base_url** <sup><sub>string</sub></sup> *REQUIRED*
 
   IP address and port of the controller. Should be of the form ```https://<ip-address>:<port>```. UniFi OS based controllers must use port 443.
@@ -54,9 +68,9 @@ unifi_wifi:
 
   ---
 
-- **site** <sup><sub>string</sub></sup> (optional, default: default)
+- **scan_interval** <sup><sub>string</sub></sup> (optional, default: 600)
 
-  Only use this if you've renamed your site or have multiple sites managed by the controller
+  blah blah blah
 
   ---
 
@@ -72,9 +86,9 @@ unifi_wifi:
 
   ---
 
-- **networks** <sup><sub>list</sub></sup> (optional)
+- **monitored_ssids** <sup><sub>list</sub></sup> (optional)
 
-  Using the ```ssid``` key, any wireless networks included here will have binary sensor and image entities created. The binary sensor indicates whether the network is enabled (on) or disabled (off) and has additional attributes including ssid name, network id, and password. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network.
+  Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, QR code generation text, and timestamp of last update.
 
   ---
 
@@ -82,29 +96,37 @@ unifi_wifi:
 ### ```unifi_wifi.custom_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | SSID | no | STRING wireless network whose password you want to change  |
+  | controller_name | no | STRING blah blah blah |
+  | ssid | no | STRING wireless network whose password you want to change |
   | password | no | STRING set a user-provided password |
+
+  Change WLAN password on UniFi network to a custom string
 
 ### ```unifi_wifi.random_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | SSID | no | STRING wireless network whose password you want to change  |
-  | method | no | STRING method to generate password. One of: char, word, or xkcd |
-  | min_word_length | yes | minimum word length [default=5, min=3, max=9] |
-  | max_word_length | yes | maximum word length [default=8, min=3, max=9] |
-  | word_count | yes | number of words to generate [default=4, min=3, max=6] |
-  | char_count | yes | number of alphanumeric characters to generate [default=24, min=8, max=63] |
+  | controller_name | no | STRING blah blah blah  |
+  | ssid | no | STRING wireless network whose password you want to change |
+  | method | no | STRING char = alphanumeric string (no spaces); word = diceware passphrase (space separated); xkcd = diceware passphrase using XKCD generator (space separated) |
+  | delimiter | no | STRING blah blah blah |
+  | min_length | yes | minimum word length (default=5, min=3, max=9) |
+  | max_length | yes | maximum word length (default=8, min=3, max=9) |
+  | word_count | yes | number of words to generate (default=4, min=3, max=6) |
+  | char_count | yes | number of alphanumeric characters to generate (default=24, min=8, max=63) |
 
+  Change WLAN password on UniFi network to a randomly generated string
   - char --> 24-character alphanumeric string
   - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^4]. This wordfile is located in ```custom_components/unfi_wifi```
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The main benefit of xkcdpass is having more granular control over the length of words chosen and characters used. Currently, this must be changed in ```custom_components/unfi_wifi/password.py```
 
-### ```unifi_wifi.refresh_networks```
+### ```unifi_wifi.enable_wlan```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | none | | |
+  | controller_name | no | STRING blah blah blah |
+  | ssid | no | STRING wireless network whose password you want to change |
+  | enabled | no | BOOLEAN enabled = true, disabled = false |
 
-  Whenever WLAN settings (i.e. passwords) are changed directly on the controller, use this service to update the binary sensor and image entities
+  Enable (or disable) a specific WLAN on a UniFi network
 
 [^1]: https://my.home-assistant.io/create-link/
 [^2]: https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp
