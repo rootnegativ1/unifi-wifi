@@ -35,7 +35,7 @@ template:
     - name: 'Guest Wifi Random'
       unique_id: guest_wifi_random
       press:
-        - service: unifi_wifi_next.random_password
+        - service: unifi_wifi.random_password
           data:
             controller_name: myhouse
             ssid: Guest
@@ -48,7 +48,7 @@ template:
           data:
             controller_name: myhouse
             ssid: Guest
-            password: "TumbleWeed5"
+            password: "SOME-KNOWN-DEFAULT"
 
     - name: 'Guest Wifi Custom'
       unique_id: guest_wifi_custom

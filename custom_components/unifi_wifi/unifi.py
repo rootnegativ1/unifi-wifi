@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging, mimetypes, os, collections, aiohttp, async_timeout
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from homeassistant.components.image import ImageEntity
 from homeassistant.const import (
     CONF_ENABLED,
@@ -12,9 +12,12 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_VERIFY_SSL,
-    CONF_USERNAME
+    CONF_USERNAME,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN
 )
 from homeassistant.helpers.httpx_client import get_async_client
+from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -168,7 +171,7 @@ class UnifiWifiController(DataUpdateCoordinator):
             return await self._logout(session)
 
 
-class UnifiWifiImage(CoordinatorEntity, ImageEntity):
+class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
     """Representation of a Unifi Wifi image."""
 
     def __init__(self, hass, coordinator, ssid):
@@ -178,6 +181,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity):
         ind = self._update_index(ssid)
         password = self.coordinator.wlanconf[ind][UNIFI_PASSWORD]
 
+        utc = dt_util.utcnow()
         self._attributes = {
             CONF_ENABLED: self.coordinator.wlanconf[ind][CONF_ENABLED],
             CONF_CONTROLLER_NAME: self.coordinator.controller_name,
@@ -186,14 +190,14 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity):
             UNIFI_ID: self.coordinator.wlanconf[ind][UNIFI_ID],
             CONF_PASSWORD: password,
             'qr_text': f"WIFI:T:WPA;S:{ssid};P:{password};;",
-            'timestamp': int(datetime.now().timestamp())
+            'timestamp': int(dt_util.utc_to_timestamp(utc))
         }
 
         self._update_qr()
 
         self._attr_name = f"{self._attributes[CONF_CONTROLLER_NAME]} {self._attributes[CONF_SITE]} {ssid} wifi"
         self._attr_unique_id = slugify(f"{DOMAIN}_{self._attr_name}_image")
-        self._attr_image_last_updated = dt_util.utcnow()
+        self._attr_image_last_updated = utc
 
         _verify_ssl = self.coordinator.verify_ssl
         if _verify_ssl:
@@ -228,6 +232,34 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity):
         # await self.coordinator.async_refresh()
         await self.coordinator.async_request_refresh()
 
+    async def async_added_to_hass(self) -> None:
+        """When entity is added to hass."""
+        await super().async_added_to_hass()
+
+        # https://github.com/home-assistant/core/blob/dev/homeassistant/helpers/update_coordinator.py#L419
+        self.async_on_remove(
+            self.coordinator.async_add_listener(
+                self._handle_coordinator_update, self.coordinator_context
+            )
+        )
+
+        # Restore last state -- can't find the source link
+        _LOGGER.debug("Trying to restore: %s", self._attr_name)
+        if (
+            last_state := await self.async_get_last_state()
+        ) and last_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            #self._state = last_state.state
+            # restore self._attr_image_last_updated since image uses it for the state
+            #   and must be set to a datetime object
+            self._attr_image_last_updated = dt_util.parse_datetime(last_state.state)
+
+            for attr in [CONF_ENABLED, CONF_CONTROLLER_NAME, CONF_SITE, CONF_SSID, UNIFI_ID, CONF_PASSWORD, 'qr_text', 'timestamp']:
+                if attr in last_state.attributes:
+                    self._attributes[attr] = last_state.attributes[attr]
+            _LOGGER.debug("Restored: %s", self._attr_name)
+        else:
+            _LOGGER.debug("Unable to restore: %s", self._attr_name)
+
     def _update_qr(self) -> None:
         # should this be run as async?
         # https://developers.home-assistant.io/docs/asyncio_working_with_async?_highlight=executor#calling-sync-functions-from-async
@@ -255,8 +287,10 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity):
             self._attributes[CONF_PASSWORD] = self.coordinator.wlanconf[ind][UNIFI_PASSWORD]
             self._attributes[UNIFI_ID] = self.coordinator.wlanconf[ind][UNIFI_ID]
             self._attributes['qr_text'] = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
-            self._attributes['timestamp'] = int(datetime.now().timestamp())
-            self._attr_image_last_updated = dt_util.utcnow()
+
+            utc = dt_util.utcnow()
+            self._attributes['timestamp'] = int(dt_util.utc_to_timestamp(utc))
+            self._attr_image_last_updated = utc
 
             self._update_qr()
 

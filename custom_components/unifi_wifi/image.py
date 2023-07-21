@@ -35,6 +35,6 @@ async def async_setup_platform(
                 await x.async_refresh()
                 for wlan in conf[CONF_MONITORED_SSIDS]:
                     entities.append(unifi.UnifiWifiImage(hass, x, wlan[CONF_NAME]))
-                    _LOGGER.debug("Setting up image for SSID %s on controller %s", wlan[CONF_NAME], x.controller_name)
+                    _LOGGER.debug("Setting up image for SSID %s at site %s on controller %s", wlan[CONF_NAME], conf[CONF_SITE], conf[CONF_CONTROLLER_NAME])
 
     async_add_entities(entities)
