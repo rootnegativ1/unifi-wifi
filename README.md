@@ -38,13 +38,13 @@ unifi_wifi:
 ### Configuration Variables
 - **controller_name** <sup><sub>string</sub></sup> *REQUIRED*
 
-  blah blah blah
+  Unique name to identify each site + base_url combo (e.g. operating multiple sites on the same controller)
 
   ---
 
-- **site** <sup><sub>string</sub></sup> *REQUIRED*
+- **site** <sup><sub>string</sub></sup> (optional, default: default)
 
-  blah blah blah
+  Only necessary if you operate multiple sites on the same controller.
 
   ---
 
@@ -70,7 +70,7 @@ unifi_wifi:
 
 - **scan_interval** <sup><sub>string</sub></sup> (optional, default: 600)
 
-  blah blah blah
+  How often, in seconds, Home Assistant should poll the controller.
 
   ---
 
@@ -96,23 +96,23 @@ unifi_wifi:
 ### ```unifi_wifi.custom_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | controller_name | no | STRING blah blah blah |
-  | ssid | no | STRING wireless network whose password you want to change |
-  | password | no | STRING set a user-provided password |
+  | controller_name | no | blah blah blah |
+  | ssid | no | wireless network whose password you want to change |
+  | password | no | set a user-provided password |
 
   Change WLAN password on UniFi network to a custom string
 
 ### ```unifi_wifi.random_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | controller_name | no | STRING blah blah blah  |
-  | ssid | no | STRING wireless network whose password you want to change |
-  | method | no | STRING char = alphanumeric string (no spaces); word = diceware passphrase (space separated); xkcd = diceware passphrase using XKCD generator (space separated) |
-  | delimiter | no | STRING blah blah blah |
-  | min_length | yes | minimum word length (default=5, min=3, max=9) |
-  | max_length | yes | maximum word length (default=8, min=3, max=9) |
-  | word_count | yes | number of words to generate (default=4, min=3, max=6) |
-  | char_count | yes | number of alphanumeric characters to generate (default=24, min=8, max=63) |
+  | controller_name | no | blah blah blah |
+  | ssid | no | wireless network whose password you want to change |
+  | method | no | char = alphanumeric string (no spaces); word = diceware passphrase (space separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) |
+  | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd only] (default=space) |
+  | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
+  | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
+  | word_count | yes | number of words to generate [xkcd & word] (default=4, min=3, max=6) |
+  | char_count | yes | number of alphanumeric characters to generate [char only] (default=24, min=8, max=63) |
 
   Change WLAN password on UniFi network to a randomly generated string
   - char --> 24-character alphanumeric string
@@ -122,11 +122,11 @@ unifi_wifi:
 ### ```unifi_wifi.enable_wlan```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | controller_name | no | STRING blah blah blah |
-  | ssid | no | STRING wireless network whose password you want to change |
-  | enabled | no | BOOLEAN enabled = true, disabled = false |
+  | controller_name | no | blah blah blah |
+  | ssid | no | wireless network whose password you want to change |
+  | enabled | no | enabled = true, disabled = false |
 
-  Enable (or disable) a specific WLAN on a UniFi network
+  Enable (or disable) a specific WLAN on a UniFi network controller
 
 [^1]: https://my.home-assistant.io/create-link/
 [^2]: https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp

@@ -54,7 +54,7 @@ _SSID_SCHEMA = vol.Schema({
 
 _SITE_SCHEMA = vol.Schema({
     vol.Required(CONF_CONTROLLER_NAME): cv.string,
-    vol.Required(CONF_SITE): cv.string,
+    vol.Optional(CONF_SITE, default='default'): cv.string,
     vol.Required(CONF_BASEURL): cv.matches_regex(CONF_BASEURL_REGEX),
     vol.Required(CONF_USERNAME): cv.string,
     vol.Required(CONF_PASSWORD): cv.string,
