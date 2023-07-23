@@ -8,8 +8,10 @@ from datetime import timedelta
 from homeassistant.components.image import ImageEntity
 from homeassistant.const import (
     CONF_ENABLED,
+    CONF_HOST,
     CONF_NAME,
     CONF_PASSWORD,
+    CONF_PORT,
     CONF_SCAN_INTERVAL,
     CONF_VERIFY_SSL,
     CONF_USERNAME,
@@ -26,7 +28,6 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util, slugify
 from .const import (
     DOMAIN,
-    CONF_BASEURL,
     CONF_CONTROLLER_NAME,
     CONF_MONITORED_SSIDS,
     CONF_SITE,
@@ -62,7 +63,8 @@ class UnifiWifiController(DataUpdateCoordinator):
         self.controller_name = conf[CONF_CONTROLLER_NAME]
         self.verify_ssl = conf[CONF_VERIFY_SSL]
         self.site = conf[CONF_SITE]
-        self._baseurl = conf[CONF_BASEURL]
+        self._host = conf[CONF_HOST]
+        self._port = conf[CONF_PORT]
         self._user = conf[CONF_USERNAME]
         self._password = conf[CONF_PASSWORD]
         self._unifi_os = conf[CONF_UNIFI_OS]
@@ -94,9 +96,9 @@ class UnifiWifiController(DataUpdateCoordinator):
         # else:
             # headers = dict(headers)
 
-        # return await session.request(method, f"{self._baseurl}{path}", **kwargs, headers=headers)
+        # return await session.request(method, f"https://{self._host}:{self._port}{path}", **kwargs, headers=headers)
 
-        return await session.request(method, f"{self._baseurl}{path}", **kwargs)
+        return await session.request(method, f"https://{self._host}:{self._port}{path}", **kwargs)
 
     async def _login(self, session: aiohttp.ClientSession) -> bool:
         data = {'username': self._user, 'password': self._password}

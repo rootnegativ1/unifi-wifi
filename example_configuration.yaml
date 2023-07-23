@@ -2,7 +2,8 @@ unifi_wifi:
   - controller_name: myhouse
     site: default
     scan_interval: 300
-    base_url: !secret unifi_baseurl
+    host: !secret unifi_host
+    port: 443
     username: !secret unifi_username
     password: !secret unifi_password
     unifi_os: true

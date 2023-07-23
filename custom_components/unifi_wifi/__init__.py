@@ -6,9 +6,11 @@ import voluptuous as vol
 from datetime import datetime
 from homeassistant.const import (
     CONF_ENABLED,
+    CONF_HOST,
     CONF_METHOD,
     CONF_NAME,
     CONF_PASSWORD,
+    CONF_PORT,
     CONF_SCAN_INTERVAL,
     CONF_USERNAME,
     CONF_VERIFY_SSL,
@@ -21,12 +23,11 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import slugify
 from .const import (
     DOMAIN,
-    CONF_BASEURL,
-    CONF_BASEURL_REGEX,
     CONF_CHAR_COUNT,
     CONF_CONTROLLER_NAME,
     CONF_DELIMITER,
     CONF_DELIMITER_TYPES,
+    CONF_HOST_REGEX,
     CONF_MAX_LENGTH,
     CONF_METHOD_TYPES,
     CONF_MIN_LENGTH,
@@ -55,7 +56,8 @@ _SSID_SCHEMA = vol.Schema({
 _SITE_SCHEMA = vol.Schema({
     vol.Required(CONF_CONTROLLER_NAME): cv.string,
     vol.Optional(CONF_SITE, default='default'): cv.string,
-    vol.Required(CONF_BASEURL): cv.matches_regex(CONF_BASEURL_REGEX),
+    vol.Required(CONF_HOST): cv.matches_regex(CONF_HOST_REGEX),
+    vol.Optional(CONF_PORT, default=443): cv.port,
     vol.Required(CONF_USERNAME): cv.string,
     vol.Required(CONF_PASSWORD): cv.string,
     vol.Optional(CONF_SCAN_INTERVAL, default=600): cv.time_period,

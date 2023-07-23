@@ -25,7 +25,8 @@ To enable this component in your installation, add the following to your configu
 unifi_wifi:
   - controller_name: myhouse
     site: default
-    base_url: https://192.168.1.1:443
+    host: https://192.168.1.1:443
+    port: 443
     username: local.admin
     password: NotARealPassword
     scan_interval: 300
@@ -48,11 +49,11 @@ unifi_wifi:
 
   ---
 
-- **base_url** <sup><sub>string</sub></sup> *REQUIRED*
+- **host** <sup><sub>string</sub></sup> *REQUIRED*
 
-  IP address and port of the controller. Should be of the form ```https://<ip-address>:<port>```. UniFi OS based controllers must use port 443.
+  IP address of the controller.
     > **Note**
-    > Currently implemented regex validation: ```https:\/\/((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:\d+``` [^2] [^3]
+    > Currently implemented regex validation: ```((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}``` [^2] [^3]
 
   ---
 
@@ -65,6 +66,12 @@ unifi_wifi:
 - **password** <sup><sub>string</sub></sup> *REQUIRED*
 
   The password for the above username
+
+  ---
+
+- **port** <sup><sub>string</sub></sup> (optional, default: 443)
+
+  In combination with host, the port at which the controller can be reached. UniFi OS controllers must be accessed on 443.
 
   ---
 
