@@ -10,7 +10,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from .const import (
     DOMAIN,
-    CONF_CONTROLLER_NAME,
     CONF_MONITORED_SSIDS,
     CONF_SITE
 )
@@ -31,10 +30,10 @@ async def async_setup_platform(
     entities = []
     for conf in hass.data[DOMAIN]:
         for x in coordinators:
-            if conf[CONF_CONTROLLER_NAME] == x.controller_name:
+            if conf[CONF_NAME] == x.name:
                 await x.async_refresh()
                 for wlan in conf[CONF_MONITORED_SSIDS]:
                     entities.append(unifi.UnifiWifiImage(hass, x, wlan[CONF_NAME]))
-                    _LOGGER.debug("Setting up image for SSID %s at site %s on controller %s", wlan[CONF_NAME], conf[CONF_SITE], conf[CONF_CONTROLLER_NAME])
+                    _LOGGER.debug("Setting up image for SSID %s at site %s on controller %s", wlan[CONF_NAME], conf[CONF_SITE], conf[CONF_NAME])
 
     async_add_entities(entities)

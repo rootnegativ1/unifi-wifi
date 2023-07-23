@@ -25,7 +25,7 @@ To enable this component in your installation, add the following to your configu
 unifi_wifi:
   - controller_name: myhouse
     site: default
-    host: https://192.168.1.1:443
+    host: 192.168.1.1
     port: 443
     username: local.admin
     password: NotARealPassword
@@ -37,23 +37,15 @@ unifi_wifi:
 ```
 
 ### Configuration Variables
-- **controller_name** <sup><sub>string</sub></sup> *REQUIRED*
+- **name** <sup><sub>string</sub></sup> *REQUIRED*
 
-  Unique name to identify each site + base_url combo (e.g. operating multiple sites on the same controller)
-
-  ---
-
-- **site** <sup><sub>string</sub></sup> (optional, default: default)
-
-  Only necessary if you operate multiple sites on the same controller.
+  Unique name to identify each host + site combo (e.g. operating multiple sites on the same controller)
 
   ---
 
 - **host** <sup><sub>string</sub></sup> *REQUIRED*
 
-  IP address of the controller.
-    > **Note**
-    > Currently implemented regex validation: ```((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}``` [^2] [^3]
+  Hostname or IP address of the controller.
 
   ---
 
@@ -66,6 +58,12 @@ unifi_wifi:
 - **password** <sup><sub>string</sub></sup> *REQUIRED*
 
   The password for the above username
+
+  ---
+
+- **site** <sup><sub>string</sub></sup> (optional, default: default)
+
+  Only necessary if you operate multiple sites on the same controller.
 
   ---
 
@@ -103,7 +101,7 @@ unifi_wifi:
 ### ```unifi_wifi.custom_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | controller_name | no | blah blah blah |
+  | name | no | Name of the host + site combo as defined in YAML |
   | ssid | no | wireless network whose password you want to change |
   | password | no | set a user-provided password |
 
@@ -112,7 +110,7 @@ unifi_wifi:
 ### ```unifi_wifi.random_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | controller_name | no | blah blah blah |
+  | name | no | Name of the host + site combo as defined in YAML |
   | ssid | no | wireless network whose password you want to change |
   | method | no | char = alphanumeric string (no spaces); word = diceware passphrase (space separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) |
   | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd only] (default=space) |
@@ -129,7 +127,7 @@ unifi_wifi:
 ### ```unifi_wifi.enable_wlan```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | controller_name | no | blah blah blah |
+  | name | no | Name of the host + site combo as defined in YAML |
   | ssid | no | wireless network whose password you want to change |
   | enabled | no | enabled = true, disabled = false |
 

@@ -28,7 +28,6 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util, slugify
 from .const import (
     DOMAIN,
-    CONF_CONTROLLER_NAME,
     CONF_MONITORED_SSIDS,
     CONF_SITE,
     CONF_SSID,

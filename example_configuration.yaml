@@ -1,5 +1,5 @@
 unifi_wifi:
-  - controller_name: myhouse
+  - name: myhouse
     site: default
     scan_interval: 300
     host: !secret unifi_host
@@ -38,7 +38,7 @@ template:
       press:
         - service: unifi_wifi.random_password
           data:
-            controller_name: myhouse
+            name: myhouse
             ssid: Guest
             method: word
 
@@ -47,7 +47,7 @@ template:
       press:
         - service: unifi_wifi.custom_password
           data:
-            controller_name: myhouse
+            name: myhouse
             ssid: Guest
             password: "SOME-KNOWN-DEFAULT"
 
@@ -56,7 +56,7 @@ template:
       press:
         - service: unifi_wifi.custom_password
           data:
-            controller_name: myhouse
+            name: myhouse
             ssid: Guest
             password: "{{states('input_text.guest_wifi')}}"
         - service: input_text.set_value

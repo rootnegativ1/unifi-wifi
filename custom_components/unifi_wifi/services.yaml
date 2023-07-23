@@ -4,9 +4,9 @@ custom_password:
   name: Custom Password
   description: Change WLAN password on UniFi network to a custom string
   fields:
-    controller_name:
+    name:
       name: Controller
-      description: Name of the controller as defined in YAML
+      description: Name of the host + site combo as defined in YAML
       required: true
       example: "myhouse"
       # default: "myhouse"
@@ -31,9 +31,9 @@ random_password:
   name: Random Password
   description: Change WLAN password on UniFi network to a randomly generated string
   fields:
-    controller_name:
+    name:
       name: Controller
-      description: Name of the controller as defined in YAML
+      description: Name of the host + site combo as defined in YAML
       required: true
       example: "myhouse"
       # default: "myhouse"
@@ -118,9 +118,9 @@ enable_wlan:
   name: Enable/Disable WLANs
   description: Enable (or disable) a specific WLAN on a UniFi network
   fields:
-    controller_name:
+    name:
       name: Controller
-      description: Name of the controller as defined in YAML
+      description: Name of the host + site combo as defined in YAML
       required: true
       example: "myhouse"
       # default: "myhouse"

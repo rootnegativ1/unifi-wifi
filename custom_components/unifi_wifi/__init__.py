@@ -24,10 +24,8 @@ from homeassistant.util import slugify
 from .const import (
     DOMAIN,
     CONF_CHAR_COUNT,
-    CONF_CONTROLLER_NAME,
     CONF_DELIMITER,
     CONF_DELIMITER_TYPES,
-    CONF_HOST_REGEX,
     CONF_MAX_LENGTH,
     CONF_METHOD_TYPES,
     CONF_MIN_LENGTH,
@@ -54,12 +52,12 @@ _SSID_SCHEMA = vol.Schema({
 })
 
 _SITE_SCHEMA = vol.Schema({
-    vol.Required(CONF_CONTROLLER_NAME): cv.string,
-    vol.Optional(CONF_SITE, default='default'): cv.string,
-    vol.Required(CONF_HOST): cv.matches_regex(CONF_HOST_REGEX),
-    vol.Optional(CONF_PORT, default=443): cv.port,
+    vol.Required(CONF_NAME): cv.string,
+    vol.Required(CONF_HOST): cv.string,
     vol.Required(CONF_USERNAME): cv.string,
     vol.Required(CONF_PASSWORD): cv.string,
+    vol.Optional(CONF_SITE, default='default'): cv.string,
+    vol.Optional(CONF_PORT, default=443): cv.port,
     vol.Optional(CONF_SCAN_INTERVAL, default=600): cv.time_period,
     vol.Optional(CONF_UNIFI_OS, default=True): cv.boolean,
     vol.Optional(CONF_VERIFY_SSL, default=False): cv.boolean,
@@ -68,21 +66,21 @@ _SITE_SCHEMA = vol.Schema({
     ),
 })
 
-def _unique_controller_names(obj):
-    names = [slugify(conf[CONF_CONTROLLER_NAME]) for conf in obj]
-    msg = f"Duplicate controller_name values are not allowed: {names}"
+def _unique_names(obj):
+    names = [slugify(conf[CONF_NAME]) for conf in obj]
+    msg = f"Duplicate name values are not allowed: {names}"
     vol.Unique(msg)(names)
     return obj
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.All(
-        cv.ensure_list, [_SITE_SCHEMA], _unique_controller_names,
+        cv.ensure_list, [_SITE_SCHEMA], _unique_names,
     )},
     extra=vol.ALLOW_EXTRA,
 )
 
 SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.Schema({
-    vol.Required(CONF_CONTROLLER_NAME): cv.string,
+    vol.Required(CONF_NAME): cv.string,
     vol.Required(CONF_SSID): cv.string,
     vol.Required(CONF_PASSWORD): vol.All(
         cv.string, vol.Length(min=8, max=63)
@@ -97,7 +95,7 @@ def _check_word_lengths(obj):
 
 SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
     vol.Schema({
-        vol.Required(CONF_CONTROLLER_NAME): cv.string,
+        vol.Required(CONF_NAME): cv.string,
         vol.Required(CONF_SSID): cv.string,
         vol.Required(CONF_METHOD): vol.In(CONF_METHOD_TYPES),
         vol.Optional(CONF_DELIMITER, default='space'): vol.In(CONF_DELIMITER_TYPES),
@@ -118,7 +116,7 @@ SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
 )
 
 SERVICE_ENABLE_WLAN_SCHEMA = vol.Schema({
-    vol.Required(CONF_CONTROLLER_NAME): cv.string,
+    vol.Required(CONF_NAME): cv.string,
     vol.Required(CONF_SSID): cv.string,
     vol.Required(CONF_ENABLED): cv.boolean,
 })
@@ -133,10 +131,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.async_create_task(async_load_platform(hass, 'image', DOMAIN, coordinators, config))
 
 
-    def _controller_index(controller):
+    def _controller_index(name):
         """Find the array index of a specific controller within the DataUpdateCoordinators."""
         for x in coordinators:
-            if x.controller_name == controller:
+            if x.name == name:
                 return coordinators.index(x)
         # ELSE
         raise ValueError(f"The controller {controller} is not configured in YAML")
@@ -151,12 +149,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             if x[UNIFI_NAME] == ssid:
                 return True
         # ELSE
-        raise ValueError(f"The SSID {ssid} does not exist on controller {coordinators[ind].controller_name}")
+        raise ValueError(f"The SSID {ssid} does not exist on controller {coordinators[ind].name}")
         return False
 
     async def custom_password_service(call):
         """Set a custom password."""
-        controller = call.data.get(CONF_CONTROLLER_NAME)
+        controller = call.data.get(CONF_NAME)
         ssid = call.data.get(CONF_SSID)
         password = call.data.get(CONF_PASSWORD)
 
@@ -171,7 +169,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     async def random_password_service(call):
         """Set a randomized password."""
-        controller = call.data.get(CONF_CONTROLLER_NAME)
+        controller = call.data.get(CONF_NAME)
         ssid = call.data.get(CONF_SSID)
         method = call.data.get(CONF_METHOD)
         _delimiter = call.data.get(CONF_DELIMITER)
@@ -196,7 +194,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             await coordinators[ind].set_wlanconf(ssid, payload)
 
     async def enable_wlan_service(call):
-        controller = call.data.get(CONF_CONTROLLER_NAME)
+        controller = call.data.get(CONF_NAME)
         ssid = call.data.get(CONF_SSID)
         enabled = call.data.get(CONF_ENABLED)
 
