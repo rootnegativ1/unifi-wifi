@@ -98,6 +98,7 @@ unifi_wifi:
   ---
 
 ## Services
+
 ### ```unifi_wifi.custom_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
