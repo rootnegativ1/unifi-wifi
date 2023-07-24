@@ -23,7 +23,7 @@ To enable this component in your installation, add the following to your configu
 ```yaml
 # Example configuration.yaml entry
 unifi_wifi:
-  - controller_name: myhouse
+  - name: myhouse
     site: default
     host: 192.168.1.1
     port: 443
