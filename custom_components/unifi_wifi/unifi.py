@@ -52,14 +52,14 @@ class UnifiWifiController(DataUpdateCoordinator):
             hass,
             _LOGGER,
             # Name of the data. For logging purposes.
-            name=f"{conf[CONF_CONTROLLER_NAME]} UniFi Controller",
+            name=f"{conf[CONF_NAME]} UniFi Controller",
             # Polling interval. Will only be polled if there are subscribers.
             # update_interval=timedelta(seconds=30),
             update_interval=conf[CONF_SCAN_INTERVAL],
         )
 
         self.wlanconf = []
-        self.controller_name = conf[CONF_CONTROLLER_NAME]
+        self.name = conf[CONF_NAME]
         self.verify_ssl = conf[CONF_VERIFY_SSL]
         self.site = conf[CONF_SITE]
         self._host = conf[CONF_HOST]
@@ -89,38 +89,45 @@ class UnifiWifiController(DataUpdateCoordinator):
         # https://book.pythontips.com/en/latest/args_and_kwargs.html
         # https://stackoverflow.com/questions/11277432/how-can-i-remove-a-key-from-a-python-dictionary
 
-        # headers = kwargs.pop("headers", None) # remove headers from kwargs
-        # if headers is None:
-            # headers = {}
-        # else:
-            # headers = dict(headers)
+        headers = kwargs.pop("headers", None) # remove headers from kwargs
+        if headers is None:
+            headers = {}
+        else:
+            headers = dict(headers)
 
-        # return await session.request(method, f"https://{self._host}:{self._port}{path}", **kwargs, headers=headers)
+        fullpath = f"https://{self._host}:{self._port}{path}"
+        #_LOGGER.debug("path %s", fullpath)
+        #_LOGGER.debug("kwargs %s", kwargs)
+        #_LOGGER.debug("headers %s", headers)
 
-        return await session.request(method, f"https://{self._host}:{self._port}{path}", **kwargs)
+        return await session.request(method, fullpath, **kwargs, headers=headers)
+        # return await session.request(method, f"https://{self._host}:{self._port}{path}", **kwargs)
 
     async def _login(self, session: aiohttp.ClientSession) -> bool:
-        data = {'username': self._user, 'password': self._password}
-        kwargs = {'data': data}
+        payload = {'username': self._user, 'password': self._password}
+        kwargs = {'json': payload}
         path = f"{self._login_prefix}/login"
         resp = await self._request(session, 'post', path, **kwargs)
 
-        # json = await resp.json()
-        # _LOGGER.debug("login response: %s", json)
+        #json = await resp.json()
+        #_LOGGER.debug("login response: %s", json)
 
         self._cookie = resp.cookies
-        self._csrf_token = resp.headers['X-CSRF-Token']
+        if self._unifi_os:
+            self._csrf_token = resp.headers['X-CSRF-Token']
 
         return True
 
     async def _logout(self, session: aiohttp.ClientSession) -> bool:
-        headers = {'X-CSRF-Token': self._csrf_token, 'content-length': '0'}
+        headers = {'Content-Length': '0'}
+        if self._unifi_os:
+            headers['X-CSRF-Token'] = self._csrf_token
         kwargs = {'cookies': self._cookie, 'headers': headers}
         path = f"{self._login_prefix}/logout"
         resp = await self._request(session, 'post', path, **kwargs)
 
-        # json = await resp.json()
-        # _LOGGER.debug("logout response: %s", json)
+        #json = await resp.json()
+        #_LOGGER.debug("logout response: %s", json)
 
         return True
 
@@ -131,7 +138,7 @@ class UnifiWifiController(DataUpdateCoordinator):
 
         json = await resp.json()
         self.wlanconf = json['data']
-        # _LOGGER.debug("_update_wlanconf response: %s", json)
+        #_LOGGER.debug("_update_wlanconf response: %s", json)
 
         return True
 
@@ -157,17 +164,19 @@ class UnifiWifiController(DataUpdateCoordinator):
                     found = True
 
             if found:
-                headers = {'X-CSRF-Token': self._csrf_token}
+                headers = {}
+                if self._unifi_os:
+                    headers['X-CSRF-Token'] = self._csrf_token
                 kwargs = {'cookies': self._cookie, 'headers': headers, 'json': payload}
                 path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf/{idno}"
                 resp = await self._request(session, 'put', path, **kwargs)
 
                 await self.async_refresh()
 
-                # json = await resp.json()
-                # _LOGGER.debug("set_wlanconf response: %s", json)
+                #json = await resp.json()
+                #_LOGGER.debug("set_wlanconf response: %s", json)
             else:
-                raise ValueError(f"The ssid {ssid} cannot be found at site {self.site} on controller {self.controller_name}")
+                raise ValueError(f"The ssid {ssid} cannot be found at site {self.site} on controller {self.name}")
 
             return await self._logout(session)
 
@@ -185,7 +194,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         utc = dt_util.utcnow()
         self._attributes = {
             CONF_ENABLED: self.coordinator.wlanconf[ind][CONF_ENABLED],
-            CONF_CONTROLLER_NAME: self.coordinator.controller_name,
+            CONF_NAME: self.coordinator.name,
             CONF_SITE: self.coordinator.site,
             CONF_SSID: ssid,
             UNIFI_ID: self.coordinator.wlanconf[ind][UNIFI_ID],
@@ -196,15 +205,15 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
         self._update_qr()
 
-        self._attr_name = f"{self._attributes[CONF_CONTROLLER_NAME]} {self._attributes[CONF_SITE]} {ssid} wifi"
+        self._attr_name = f"{self._attributes[CONF_NAME]} {self._attributes[CONF_SITE]} {ssid} wifi"
         self._attr_unique_id = slugify(f"{DOMAIN}_{self._attr_name}_image")
         self._attr_image_last_updated = utc
 
         _verify_ssl = self.coordinator.verify_ssl
         if _verify_ssl:
-            self._attr_image_url = f"https://127.0.0.1:8123/local/{self._attributes[CONF_CONTROLLER_NAME]}_{self._attributes[CONF_SITE]}_{ssid}_wifi_qr.png"
+            self._attr_image_url = f"https://127.0.0.1:8123/local/{self._attributes[CONF_NAME]}_{self._attributes[CONF_SITE]}_{ssid}_wifi_qr.png"
         else:
-            self._attr_image_url = f"http://127.0.0.1:8123/local/{self._attributes[CONF_CONTROLLER_NAME]}_{self._attributes[CONF_SITE]}_{ssid}_wifi_qr.png"
+            self._attr_image_url = f"http://127.0.0.1:8123/local/{self._attributes[CONF_NAME]}_{self._attributes[CONF_SITE]}_{ssid}_wifi_qr.png"
 
         self._client = get_async_client(hass, verify_ssl=_verify_ssl)
         self.access_tokens: collections.deque = collections.deque([], 2)
@@ -254,7 +263,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             #   and must be set to a datetime object
             self._attr_image_last_updated = dt_util.parse_datetime(last_state.state)
 
-            for attr in [CONF_ENABLED, CONF_CONTROLLER_NAME, CONF_SITE, CONF_SSID, UNIFI_ID, CONF_PASSWORD, 'qr_text', 'timestamp']:
+            for attr in [CONF_ENABLED, CONF_NAME, CONF_SITE, CONF_SSID, UNIFI_ID, CONF_PASSWORD, 'qr_text', 'timestamp']:
                 if attr in last_state.attributes:
                     self._attributes[attr] = last_state.attributes[attr]
             _LOGGER.debug("Restored: %s", self._attr_name)
@@ -264,14 +273,14 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
     def _update_qr(self) -> None:
         # should this be run as async?
         # https://developers.home-assistant.io/docs/asyncio_working_with_async?_highlight=executor#calling-sync-functions-from-async
-        # await hass.async_add_executor_job(qr.create, self._attributes[CONF_CONTROLLER_NAME], self._attributes[CONF_SITE], self._attributes[CONF_SSID], self._attributes[CONF_PASSWORD])
-        qr.create(self._attributes[CONF_CONTROLLER_NAME], self._attributes[CONF_SITE], self._attributes[CONF_SSID], self._attributes[CONF_PASSWORD])
+        # await hass.async_add_executor_job(qr.create, self._attributes[CONF_NAME], self._attributes[CONF_SITE], self._attributes[CONF_SSID], self._attributes[CONF_PASSWORD])
+        qr.create(self._attributes[CONF_NAME], self._attributes[CONF_SITE], self._attributes[CONF_SSID], self._attributes[CONF_PASSWORD])
 
     def _update_index(self, ssid):
         for wlan in self.coordinator.wlanconf:
             if wlan[CONF_NAME] == ssid:
                 return self.coordinator.wlanconf.index(wlan)
-        raise ValueError(f"SSID {ssid} not found at site {self.coordinator.site} on controller {self.coordinator.controller_name}")
+        raise ValueError(f"SSID {ssid} not found at site {self.coordinator.site} on controller {self.coordinator.name}")
 
     def _update_data(self) -> None:
         ind = self._update_index(self._attributes[CONF_SSID])
@@ -282,7 +291,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attributes[CONF_ENABLED] = self.coordinator.wlanconf[ind][CONF_ENABLED]
             self._attributes[UNIFI_ID] = self.coordinator.wlanconf[ind][UNIFI_ID]
 
-            _LOGGER.debug("SSID %s at site %s on controller %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_SITE], self._attributes[CONF_CONTROLLER_NAME], 'enabled' if self._attributes[CONF_ENABLED] == 'true' else 'disabled')
+            _LOGGER.debug("SSID %s at site %s on controller %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_SITE], self._attributes[CONF_NAME], 'enabled' if self._attributes[CONF_ENABLED] == 'true' else 'disabled')
 
         if password_change:
             self._attributes[CONF_PASSWORD] = self.coordinator.wlanconf[ind][UNIFI_PASSWORD]
@@ -295,4 +304,4 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
             self._update_qr()
 
-            _LOGGER.debug("SSID %s at site %s on controller %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_SITE], self._attributes[CONF_CONTROLLER_NAME])
+            _LOGGER.debug("SSID %s at site %s on controller %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_SITE], self._attributes[CONF_NAME])
