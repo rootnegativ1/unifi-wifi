@@ -1,4 +1,4 @@
-"""UnifiWifiController and UnifiWifiImage classes."""
+"""UnifiWifiImage platform."""
 
 from __future__ import annotations
 
@@ -10,8 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from .const import (
     DOMAIN,
-    CONF_MONITORED_SSIDS,
-    CONF_SITE
+    CONF_MONITORED_SSIDS
 )
 from . import unifi
 
@@ -28,12 +27,21 @@ async def async_setup_platform(
     """Set up the Unifi Wifi image platform."""
 
     entities = []
+
     for conf in hass.data[DOMAIN]:
-        for x in coordinators:
-            if conf[CONF_NAME] == x.name:
-                await x.async_refresh()
-                for wlan in conf[CONF_MONITORED_SSIDS]:
-                    entities.append(unifi.UnifiWifiImage(hass, x, wlan[CONF_NAME]))
-                    _LOGGER.debug("Setting up image for SSID %s at site %s on controller %s", wlan[CONF_NAME], conf[CONF_SITE], conf[CONF_NAME])
+        ind = hass.data[DOMAIN].index(conf)
+        x = coordinators[ind]
+        await x.async_refresh()
+        for wlan in conf[CONF_MONITORED_SSIDS]:
+            entities.append(unifi.UnifiWifiImage(hass, x, wlan[CONF_NAME]))
+            _LOGGER.debug("Setting up image for SSID %s on coordinator %s", wlan[CONF_NAME], conf[CONF_NAME])
+
+    # for conf in hass.data[DOMAIN]:
+        # for x in coordinators:
+            # if conf[CONF_NAME] == x.name:
+                # await x.async_refresh()
+                # for wlan in conf[CONF_MONITORED_SSIDS]:
+                    # entities.append(unifi.UnifiWifiImage(hass, x, wlan[CONF_NAME]))
+                    # _LOGGER.debug("Setting up image for SSID %s on coordinator %s", wlan[CONF_NAME], conf[CONF_NAME])
 
     async_add_entities(entities)

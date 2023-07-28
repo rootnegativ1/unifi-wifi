@@ -79,13 +79,26 @@ CONFIG_SCHEMA = vol.Schema({
     extra=vol.ALLOW_EXTRA,
 )
 
-SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.Schema({
-    vol.Required(CONF_NAME): cv.string,
-    vol.Required(CONF_SSID): cv.string,
-    vol.Required(CONF_PASSWORD): vol.All(
-        cv.string, vol.Length(min=8, max=63)
-    ),
-})
+def _is_ascii(obj):
+    # password is already validated as a string in SERVICE_CUSTOM_PASSWORD_SCHEMA
+    # should it be further validated as ascii?
+    #    https://stackoverflow.com/questions/196345/how-to-check-if-a-string-in-python-is-in-ascii
+    #    https://docs.python.org/3/library/stdtypes.html#str.isascii
+    s = obj[CONF_PASSWORD]
+    if not s.isascii():
+        raise ValueError("Password may only contain ASCII characters.")
+    return obj
+
+SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.All(
+    vol.Schema({
+        vol.Required(CONF_NAME): cv.string,
+        vol.Required(CONF_SSID): cv.string,
+        vol.Required(CONF_PASSWORD): vol.All(
+            cv.string, vol.Length(min=8, max=63)
+        ),
+    }),
+    _is_ascii
+)
 
 def _check_word_lengths(obj):
     if obj[CONF_MIN_LENGTH] > obj[CONF_MAX_LENGTH]:
@@ -123,24 +136,21 @@ SERVICE_ENABLE_WLAN_SCHEMA = vol.Schema({
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
-    # define individual controllers (DataUpdateCoordinators)
-    coordinators = [unifi.UnifiWifiController(hass, conf) for conf in config[DOMAIN]]
+    coordinators = [unifi.UnifiWifiCoordinator(hass, conf) for conf in config[DOMAIN]]
     hass.data[DOMAIN] = config[DOMAIN]
 
-    # create image entities (CoordinatorEntities)
     hass.async_create_task(async_load_platform(hass, 'image', DOMAIN, coordinators, config))
 
 
-    def _controller_index(name):
-        """Find the array index of a specific controller within the DataUpdateCoordinators."""
+    def _coordinator_index(name):
+        """Find the array index of a specific coordinator."""
         for x in coordinators:
             if x.name == name:
                 return coordinators.index(x)
-        # ELSE
-        raise ValueError(f"The controller {controller} is not configured in YAML")
+        raise ValueError(f"The coordinator {coordinator} is not configured in YAML")
 
     def _validate_ssid(ind, ssid) -> bool:
-        """ Check if an ssid exists on specified controller."""
+        """ Check if an ssid exists on specified coordinator."""
         # https://github.com/home-assistant/core/blob/dev/homeassistant/core.py#L423
         # NOT SURE IF this should be async_refresh() or async_request_refresh()
         hass.add_job(coordinators[ind].async_request_refresh())
@@ -148,28 +158,23 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         for x in coordinators[ind].wlanconf:
             if x[UNIFI_NAME] == ssid:
                 return True
-        # ELSE
-        raise ValueError(f"The SSID {ssid} does not exist on controller {coordinators[ind].name}")
+        raise ValueError(f"The SSID {ssid} does not exist on coordinator {coordinators[ind].name}")
         return False
 
     async def custom_password_service(call):
         """Set a custom password."""
-        controller = call.data.get(CONF_NAME)
+        coordinator = call.data.get(CONF_NAME)
         ssid = call.data.get(CONF_SSID)
         password = call.data.get(CONF_PASSWORD)
 
-        # password is already validated as a string in SERVICE_RANDOM_PASSWORD_SCHEMA
-        # should it be further validated as alphanumeric?
-        #    https://docs.python.org/3/library/stdtypes.html#str.isalnum
-
-        ind = _controller_index(controller)
+        ind = _coordinator_index(coordinator)
         if _validate_ssid(ind, ssid):
             payload = {UNIFI_PASSWORD: password}
             await coordinators[ind].set_wlanconf(ssid, payload)
 
     async def random_password_service(call):
         """Set a randomized password."""
-        controller = call.data.get(CONF_NAME)
+        coordinator = call.data.get(CONF_NAME)
         ssid = call.data.get(CONF_SSID)
         method = call.data.get(CONF_METHOD)
         _delimiter = call.data.get(CONF_DELIMITER)
@@ -187,19 +192,20 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         else:
             raise ValueError(f"invalid delimiter option ({_delimiter})")
 
-        ind = _controller_index(controller)
+        ind = _coordinator_index(coordinator)
         if _validate_ssid(ind, ssid):
             password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
             payload = {UNIFI_PASSWORD: password}
             await coordinators[ind].set_wlanconf(ssid, payload)
 
     async def enable_wlan_service(call):
-        controller = call.data.get(CONF_NAME)
+        """Enable or disable a specifed wlan."""
+        coordinator = call.data.get(CONF_NAME)
         ssid = call.data.get(CONF_SSID)
         enabled = call.data.get(CONF_ENABLED)
 
-        ind = _controller_index(controller)
-        _validate_ssid(controller, ssid)
+        ind = _coordinator_index(coordinator)
+        _validate_ssid(coordinator, ssid)
 
         payload = {'enabled': str(enabled).lower()}
         await coordinators[ind].set_wlanconf(ssid, payload)
