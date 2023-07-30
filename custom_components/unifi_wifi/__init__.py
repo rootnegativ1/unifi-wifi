@@ -13,7 +13,7 @@ from homeassistant.const import (
     CONF_PORT,
     CONF_SCAN_INTERVAL,
     CONF_USERNAME,
-    CONF_VERIFY_SSL,
+    CONF_VERIFY_SSL
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -153,6 +153,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         """ Check if an ssid exists on specified coordinator."""
         # https://github.com/home-assistant/core/blob/dev/homeassistant/core.py#L423
         # NOT SURE IF this should be async_refresh() or async_request_refresh()
+        # I THINK it should be async_request_refresh() so that (near) simultaneous
+        #    service calls don't bombard the api on a unifi controller
         hass.add_job(coordinators[ind].async_request_refresh())
 
         for x in coordinators[ind].wlanconf:
@@ -177,20 +179,20 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         coordinator = call.data.get(CONF_NAME)
         ssid = call.data.get(CONF_SSID)
         method = call.data.get(CONF_METHOD)
-        _delimiter = call.data.get(CONF_DELIMITER)
+        delimiter_raw = call.data.get(CONF_DELIMITER)
         min_length = call.data.get(CONF_MIN_LENGTH)
         max_length = call.data.get(CONF_MAX_LENGTH)
         word_count = call.data.get(CONF_WORD_COUNT)
         char_count = call.data.get(CONF_CHAR_COUNT)
 
-        if _delimiter == 'space':
+        if _delimiter_raw == 'space':
             delimiter = ' '
-        elif _delimiter == 'dash':
+        elif delimiter_raw == 'dash':
             delimiter = '-'
-        elif _delimiter == 'none':
+        elif delimiter_raw == 'none':
             delimiter = ''
         else:
-            raise ValueError(f"invalid delimiter option ({_delimiter})")
+            raise ValueError(f"invalid delimiter option ({delimiter_raw})")
 
         ind = _coordinator_index(coordinator)
         if _validate_ssid(ind, ssid):
@@ -205,10 +207,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         enabled = call.data.get(CONF_ENABLED)
 
         ind = _coordinator_index(coordinator)
-        _validate_ssid(coordinator, ssid)
-
-        payload = {'enabled': str(enabled).lower()}
-        await coordinators[ind].set_wlanconf(ssid, payload)
+        if _validate_ssid(coordinator, ssid):
+            payload = {'enabled': str(enabled).lower()}
+            await coordinators[ind].set_wlanconf(ssid, payload)
 
     hass.services.async_register(
         DOMAIN,

@@ -4,12 +4,12 @@ import qrcode
 import qrcode.image.svg # required for svg support
 
 IMG_PATH = '/config/www'
-#FILETYPES = ['png', 'svg']
-FILETYPES = ['png']
+#IMG_FILETYPES = ['png', 'svg']
+IMG_FILETYPES = ['png']
 
 
-def create(coordinator_name, ssid, password):
-    qrtext = f"WIFI:T:WPA;S:{ssid};P:{password};;"
+def create(_coordinator_name, _ssid, _password):
+    qrtext = f"WIFI:T:WPA;S:{_ssid};P:{_password};;"
 
     qr = qrcode.QRCode(
         version=1,
@@ -20,7 +20,7 @@ def create(coordinator_name, ssid, password):
     qr.add_data(qrtext)
     qr.make(fit=True)
 
-    for x in FILETYPES:
+    for x in IMG_FILETYPES:
         ext = x.lower()
         if ext == 'svg':
             #img = qr.make_image(fill_color='black', back_color='white', image_factory=qrcode.image.svg.SvgPathImage)
@@ -32,5 +32,5 @@ def create(coordinator_name, ssid, password):
             #img = qr.make_image(fill_color='black', back_color='white')
             img = qr.make_image()
         type(img)
-        path = f"{IMG_PATH}/{coordinator_name}_{ssid}_wifi_qr.{ext}"
+        path = f"{IMG_PATH}/{_coordinator_name}_{_ssid}_wifi_qr.{ext}"
         img.save(path)

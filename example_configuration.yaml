@@ -14,7 +14,7 @@ unifi_wifi:
 
 # logger:
   # logs:
-    # custom_components.unifi_wifi_next: debug
+    # custom_components.unifi_wifi: debug
 
 
 automation:

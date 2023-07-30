@@ -49,7 +49,7 @@ from . import qr_code as qr
 
 _LOGGER = logging.getLogger(__name__)
 
-
+DEBUG = True
 
 
 class UnifiWifiCoordinator(DataUpdateCoordinator):
@@ -81,6 +81,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         else:
             self._login_prefix = '/api'
             self._api_prefix = ''
+        self._csrf_token = '' # placeholder for session tokens
 
     async def _async_update_data(self):
         try:
@@ -102,24 +103,32 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         else:
             headers = dict(headers)
 
+        if self._unifi_os:
+            # not all requests NEED the token, but its easier to pass each time
+            # in case Ubiquiti changes the api requirements
+            headers['X-CSRF-Token'] = self._csrf_token
+
         fullpath = f"https://{self._host}:{self._port}{path}"
-        #_LOGGER.debug("path %s", fullpath)
-        #_LOGGER.debug("kwargs %s", kwargs)
-        #_LOGGER.debug("headers %s", headers)
+        if DEBUG:
+            _LOGGER.debug("_request path %s", fullpath)
+            _LOGGER.debug("_request kwargs %s", kwargs)
+            _LOGGER.debug("_request headers %s", headers)
 
         return await session.request(method, fullpath, **kwargs, headers=headers)
 
     async def _login(self, session: aiohttp.ClientSession) -> bool:
         """log into a UniFi controller."""
         payload = {'username': self._user, 'password': self._password}
-        kwargs = {'json': payload}
+        headers = {'Content-Type': 'application/json'}
+        kwargs = {'json': payload, 'headers': headers}
         path = f"{self._login_prefix}/login"
         resp = await self._request(session, 'post', path, **kwargs)
 
-        # json = await resp.json()
-        # _LOGGER.debug("login response: %s", json)
+        if DEBUG:
+            _LOGGER.debug("_login response: %s", await resp.json())
+            _LOGGER.debug("_login response cookies: %s", resp.cookies)
+            _LOGGER.debug("_login response headers: %s", resp.headers)
 
-        self._cookie = resp.cookies
         if self._unifi_os:
             self._csrf_token = resp.headers['X-CSRF-Token']
 
@@ -128,58 +137,72 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
     async def _logout(self, session: aiohttp.ClientSession) -> bool:
         """log out of a UniFi controller."""
         headers = {'Content-Length': '0'}
-        if self._unifi_os:
-            headers['X-CSRF-Token'] = self._csrf_token
-        kwargs = {'cookies': self._cookie, 'headers': headers}
+        kwargs = {'headers': headers}
         path = f"{self._login_prefix}/logout"
         resp = await self._request(session, 'post', path, **kwargs)
 
-        # json = await resp.json()
-        # _LOGGER.debug("logout response: %s", json)
+        if DEBUG:
+            _LOGGER.debug("_logout response: %s", await resp.json())
 
+        self._csrf_token = '' # reset token
         return True
 
     async def _update_wlanconf(self, session: aiohttp.ClientSession) -> bool:
         """Get updated wlanconf info from a UniFi controller."""
-        kwargs = {'cookies': self._cookie}
+        kwargs = {}
         path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf"
         resp = await self._request(session, 'get', path, **kwargs)
 
         json = await resp.json()
         self.wlanconf = json['data']
-        # text = await resp.text()
-        # _LOGGER.debug("_update_wlanconf response: %s", text)
+        if DEBUG:
+            _LOGGER.debug("_update_wlanconf response: %s", await resp.text())
 
         return True
 
     async def _get_wlanconf(self) -> bool:
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+        async with aiohttp.ClientSession(
+            # https://docs.aiohttp.org/en/stable/client_advanced.html#ssl-control-for-tcp-sockets
+            connector=aiohttp.TCPConnector(ssl=False),
+            # without unsafe=True the login response cookie must be explicitly passed in each request
+            # https://docs.aiohttp.org/en/stable/client_advanced.html#cookie-safety
+            cookie_jar=aiohttp.CookieJar(unsafe=True)
+        ) as session:
             await self._login(session)
 
             await self._update_wlanconf(session)
 
             await self._logout(session)
+
             return await session.close()
 
     async def set_wlanconf(self, ssid: str, payload: str) -> bool:
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+        async with aiohttp.ClientSession(
+            # https://docs.aiohttp.org/en/stable/client_advanced.html#ssl-control-for-tcp-sockets
+            connector=aiohttp.TCPConnector(ssl=False),
+            # without unsafe=True the login response cookie must be explicitly passed in each request
+            # https://docs.aiohttp.org/en/stable/client_advanced.html#cookie-safety
+            cookie_jar=aiohttp.CookieJar(unsafe=True)
+        ) as session:
             await self._login(session)
 
             await self._update_wlanconf(session)
 
-            headers = {}
+            headers = {'Content-Type': 'application/json'}
             if self._unifi_os:
                 headers['X-CSRF-Token'] = self._csrf_token
-            kwargs = {'cookies': self._cookie, 'headers': headers, 'json': payload}
+            # kwargs = {'cookies': self._cookie, 'headers': headers, 'json': payload}
+            kwargs = {'headers': headers, 'json': payload}
             path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf/{idno}"
             resp = await self._request(session, 'put', path, **kwargs)
 
-            await self.async_refresh()
+            await self.async_request_refresh()
 
-            # json = await resp.json()
-            # _LOGGER.debug("set_wlanconf response: %s", json)
+            if DEBUG:
+                _LOGGER.debug("set_wlanconf response: %s", await resp.json())
 
             await self._logout(session)
+
             return await session.close()
 
 
