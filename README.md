@@ -24,15 +24,20 @@ To enable this component in your installation, add the following to your configu
 # Example configuration.yaml entry
 unifi_wifi:
   - name: myhouse
-    site: default
     host: 192.168.1.1
     port: 443
     username: local.admin
     password: NotARealPassword
+    site: default
     scan_interval: 300
     unifi_os: true
     verify_ssl: false
-    networks:
+    managed_aps:
+      - name: udm
+        mac: !secret unifi_udm_mac
+      - name: u6lite
+        mac: !secret unifi_u6l_mac
+    monitored_ssids:
       - name: my-wireless-network
 ```
 
@@ -88,6 +93,11 @@ unifi_wifi:
 - **verify_ssl** <sup><sub>boolean</sub></sup> (optional, default: false)
 
   The *truthiness* of this variable is used to enable or disable SSL certificate verification. Set to false (or omit) if your Home Assistant instance uses an http-only URL, or you have a self-signed SSL certificate and haven’t installed the CA certificate to enable verification. Otherwise set to true.
+
+  ---
+- **managed_aps** <sup><sub>list</sub></sup> (optional)
+
+  List of access points to force provision after changing a wlan password. Both ```name``` and ```mac``` keys are required.
 
   ---
 

@@ -7,6 +7,7 @@ from datetime import datetime
 from homeassistant.const import (
     CONF_ENABLED,
     CONF_HOST,
+    CONF_MAC,
     CONF_METHOD,
     CONF_NAME,
     CONF_PASSWORD,
@@ -26,6 +27,7 @@ from .const import (
     CONF_CHAR_COUNT,
     CONF_DELIMITER,
     CONF_DELIMITER_TYPES,
+    CONF_MANAGED_APS,
     CONF_MAX_LENGTH,
     CONF_METHOD_TYPES,
     CONF_MIN_LENGTH,
@@ -46,6 +48,10 @@ from . import password as pw
 
 _LOGGER = logging.getLogger(__name__)
 
+_AP_SCHEMA = vol.Schema({
+    vol.Required(CONF_NAME): cv.string,
+    vol.Required(CONF_MAC): cv.string
+})
 
 _SSID_SCHEMA = vol.Schema({
     vol.Required(CONF_NAME): cv.string,
@@ -61,6 +67,9 @@ _SITE_SCHEMA = vol.Schema({
     vol.Optional(CONF_SCAN_INTERVAL, default=600): cv.time_period,
     vol.Optional(CONF_UNIFI_OS, default=True): cv.boolean,
     vol.Optional(CONF_VERIFY_SSL, default=False): cv.boolean,
+    vol.Optional(CONF_MANAGED_APS, default=[]): vol.All(
+        cv.ensure_list, [_AP_SCHEMA]
+    ),
     vol.Optional(CONF_MONITORED_SSIDS, default=[]): vol.All(
         cv.ensure_list, [_SSID_SCHEMA]
     ),
@@ -185,7 +194,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         word_count = call.data.get(CONF_WORD_COUNT)
         char_count = call.data.get(CONF_CHAR_COUNT)
 
-        if _delimiter_raw == 'space':
+        if delimiter_raw == 'space':
             delimiter = ' '
         elif delimiter_raw == 'dash':
             delimiter = '-'

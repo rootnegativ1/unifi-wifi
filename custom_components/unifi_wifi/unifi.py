@@ -16,6 +16,7 @@ from homeassistant.components.image import ImageEntity
 from homeassistant.const import (
     CONF_ENABLED,
     CONF_HOST,
+    CONF_MAC,
     CONF_NAME,
     CONF_PASSWORD,
     CONF_PORT,
@@ -37,6 +38,7 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import dt as dt_util, slugify
 from .const import (
     DOMAIN,
+    CONF_MANAGED_APS,
     CONF_MONITORED_SSIDS,
     CONF_SITE,
     CONF_SSID,
@@ -81,7 +83,9 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         else:
             self._login_prefix = '/api'
             self._api_prefix = ''
-        self._csrf_token = '' # placeholder for session tokens
+        # self._cookies = [] # placeholder for session cookies
+        self._csrf_token = '' # placeholder for session token
+        self._aps = conf[CONF_MANAGED_APS]
 
     async def _async_update_data(self):
         try:
@@ -103,6 +107,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         else:
             headers = dict(headers)
 
+        # kwargs['cookies'] = self._cookies
         if self._unifi_os:
             # not all requests NEED the token, but its easier to pass each time
             # in case Ubiquiti changes the api requirements
@@ -129,6 +134,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("_login response cookies: %s", resp.cookies)
             _LOGGER.debug("_login response headers: %s", resp.headers)
 
+        # self._cookies = resp.cookies
         if self._unifi_os:
             self._csrf_token = resp.headers['X-CSRF-Token']
 
@@ -144,7 +150,25 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         if DEBUG:
             _LOGGER.debug("_logout response: %s", await resp.json())
 
-        self._csrf_token = '' # reset token
+        # NOT SURE if this is necessary
+        # self._cookies = [] # clear session cookies
+        # self._csrf_token = '' # clear session token
+
+        return True
+
+    async def _force_provision(self, session: aiohttp.ClientSession) -> bool:
+        if self._aps == []: return True
+
+        headers = {'Content-Type': 'application/json'}
+        path = f"{self._api_prefix}/api/s/{self.site}/cmd/devmgr"
+        for ap in self._aps:
+            payload = {'cmd': 'force-provision', 'mac': ap[CONF_MAC]}
+            kwargs = {'headers': headers, 'json': payload}
+            resp = await self._request(session, 'post', path, **kwargs)
+
+            if DEBUG:
+                _LOGGER.debug("_force_provision response for %s: %s", ap[CONF_NAME], await resp.json())
+
         return True
 
     async def _update_wlanconf(self, session: aiohttp.ClientSession) -> bool:
@@ -188,6 +212,12 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
             await self._update_wlanconf(session)
 
+            # for wlan in self.wlanconf:
+                # if wlan[UNIFI_NAME] == ssid:
+                    # idno = wlan[UNIFI_ID]
+            ind = [wlan[UNIFI_NAME] for wlan in self.wlanconf].index(ssid)
+            idno = self.wlanconf[ind][UNIFI_ID]
+
             headers = {'Content-Type': 'application/json'}
             if self._unifi_os:
                 headers['X-CSRF-Token'] = self._csrf_token
@@ -200,6 +230,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
             if DEBUG:
                 _LOGGER.debug("set_wlanconf response: %s", await resp.json())
+
+            await self._force_provision(session)
 
             await self._logout(session)
 
@@ -302,7 +334,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
     def _update_index(self, ssid):
         for wlan in self.coordinator.wlanconf:
-            if wlan[CONF_NAME] == ssid:
+            if wlan[UNIFI_NAME] == ssid:
                 return self.coordinator.wlanconf.index(wlan)
         raise ValueError(f"SSID {ssid} not found on coordinator {self.coordinator.name}")
 

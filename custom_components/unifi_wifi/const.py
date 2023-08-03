@@ -1,6 +1,7 @@
 """Constants for the Unifi Wifi integration."""
 
 DOMAIN = 'unifi_wifi'
+CONF_MANAGED_APS = 'managed_aps'
 CONF_CHAR_COUNT = 'char_count'
 CONF_DELIMITER = 'delimiter'
 CONF_DELIMITER_TYPES = ['space','dash','none']
