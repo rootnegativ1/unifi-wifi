@@ -83,8 +83,6 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         else:
             self._login_prefix = '/api'
             self._api_prefix = ''
-        # self._cookies = [] # placeholder for session cookies
-        self._csrf_token = '' # placeholder for session token
         self._aps = conf[CONF_MANAGED_APS]
 
     async def _async_update_data(self):
@@ -92,7 +90,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             # Note: asyncio.TimeoutError and aiohttp.ClientError are already
             # handled by the data update coordinator.
             async with async_timeout.timeout(10):
-                return await self._get_wlanconf()
+                return await self._update_wlanconf()
         except ConnectionError as err:
             # # Raising ConfigEntryAuthFailed will cancel future updates
             # # and start a config flow with SOURCE_REAUTH (async_step_reauth)
@@ -107,12 +105,6 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         else:
             headers = dict(headers)
 
-        # kwargs['cookies'] = self._cookies
-        if self._unifi_os:
-            # not all requests NEED the token, but its easier to pass each time
-            # in case Ubiquiti changes the api requirements
-            headers['X-CSRF-Token'] = self._csrf_token
-
         fullpath = f"https://{self._host}:{self._port}{path}"
         if DEBUG:
             _LOGGER.debug("_request path %s", fullpath)
@@ -121,7 +113,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
         return await session.request(method, fullpath, **kwargs, headers=headers)
 
-    async def _login(self, session: aiohttp.ClientSession) -> bool:
+    async def _login(self, session: aiohttp.ClientSession):
         """log into a UniFi controller."""
         payload = {'username': self._user, 'password': self._password}
         headers = {'Content-Type': 'application/json'}
@@ -134,15 +126,13 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("_login response cookies: %s", resp.cookies)
             _LOGGER.debug("_login response headers: %s", resp.headers)
 
-        # self._cookies = resp.cookies
-        if self._unifi_os:
-            self._csrf_token = resp.headers['X-CSRF-Token']
+        return resp
 
-        return True
-
-    async def _logout(self, session: aiohttp.ClientSession) -> bool:
+    async def _logout(self, session: aiohttp.ClientSession, csrf_token: str) -> None:
         """log out of a UniFi controller."""
         headers = {'Content-Length': '0'}
+        if self._unifi_os:
+            headers['X-CSRF-Token'] = csrf_token
         kwargs = {'headers': headers}
         path = f"{self._login_prefix}/logout"
         resp = await self._request(session, 'post', path, **kwargs)
@@ -150,20 +140,18 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         if DEBUG:
             _LOGGER.debug("_logout response: %s", await resp.json())
 
-        # NOT SURE if this is necessary
-        # self._cookies = [] # clear session cookies
-        # self._csrf_token = '' # clear session token
-
-        return True
-
-    async def _force_provision(self, session: aiohttp.ClientSession) -> bool:
+    async def _force_provision(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
         if self._aps == []: return True
 
         headers = {'Content-Type': 'application/json'}
+        if self._unifi_os:
+            headers['X-CSRF-Token'] = csrf_token
+        kwargs = {'headers': headers}
         path = f"{self._api_prefix}/api/s/{self.site}/cmd/devmgr"
+
         for ap in self._aps:
             payload = {'cmd': 'force-provision', 'mac': ap[CONF_MAC]}
-            kwargs = {'headers': headers, 'json': payload}
+            kwargs['json'] = payload
             resp = await self._request(session, 'post', path, **kwargs)
 
             if DEBUG:
@@ -171,20 +159,25 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
         return True
 
-    async def _update_wlanconf(self, session: aiohttp.ClientSession) -> bool:
-        """Get updated wlanconf info from a UniFi controller."""
-        kwargs = {}
+    async def _get_wlanconf(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
+        """Get wlanconf info from a UniFi controller."""
+        headers = {}
+        if self._unifi_os:
+            headers['X-CSRF-Token'] = csrf_token
+        kwargs = {'headers': headers}
         path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf"
         resp = await self._request(session, 'get', path, **kwargs)
 
         json = await resp.json()
         self.wlanconf = json['data']
         if DEBUG:
-            _LOGGER.debug("_update_wlanconf response: %s", await resp.text())
+            _LOGGER.debug("_get_wlanconf response: %s", await resp.text())
 
         return True
 
-    async def _get_wlanconf(self) -> bool:
+    # this function is only used in _async_update_data()
+    # which is used to keep the coordinator and its entities updated
+    async def _update_wlanconf(self) -> bool:
         async with aiohttp.ClientSession(
             # https://docs.aiohttp.org/en/stable/client_advanced.html#ssl-control-for-tcp-sockets
             connector=aiohttp.TCPConnector(ssl=False),
@@ -192,11 +185,14 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             # https://docs.aiohttp.org/en/stable/client_advanced.html#cookie-safety
             cookie_jar=aiohttp.CookieJar(unsafe=True)
         ) as session:
-            await self._login(session)
+            resp = await self._login(session)
+            csrf_token = ''
+            if self._unifi_os:
+                csrf_token = resp.headers['X-CSRF-Token']
 
-            await self._update_wlanconf(session)
+            await self._get_wlanconf(session, csrf_token)
 
-            await self._logout(session)
+            await self._logout(session, csrf_token)
 
             return await session.close()
 
@@ -208,20 +204,19 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             # https://docs.aiohttp.org/en/stable/client_advanced.html#cookie-safety
             cookie_jar=aiohttp.CookieJar(unsafe=True)
         ) as session:
-            await self._login(session)
+            res = await self._login(session)
+            csrf_token = ''
+            if self._unifi_os:
+                csrf_token = resp.headers['X-CSRF-Token']
 
-            await self._update_wlanconf(session)
+            await self._get_wlanconf(session, csrf_token)
 
-            # for wlan in self.wlanconf:
-                # if wlan[UNIFI_NAME] == ssid:
-                    # idno = wlan[UNIFI_ID]
             ind = [wlan[UNIFI_NAME] for wlan in self.wlanconf].index(ssid)
             idno = self.wlanconf[ind][UNIFI_ID]
 
             headers = {'Content-Type': 'application/json'}
             if self._unifi_os:
-                headers['X-CSRF-Token'] = self._csrf_token
-            # kwargs = {'cookies': self._cookie, 'headers': headers, 'json': payload}
+                headers['X-CSRF-Token'] = csrf_token
             kwargs = {'headers': headers, 'json': payload}
             path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf/{idno}"
             resp = await self._request(session, 'put', path, **kwargs)
@@ -231,9 +226,9 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             if DEBUG:
                 _LOGGER.debug("set_wlanconf response: %s", await resp.json())
 
-            await self._force_provision(session)
+            await self._force_provision(session, csrf_token)
 
-            await self._logout(session)
+            await self._logout(session, csrf_token)
 
             return await session.close()
 
