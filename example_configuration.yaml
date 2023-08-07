@@ -8,6 +8,12 @@ unifi_wifi:
     password: !secret unifi_password
     unifi_os: true
     verify_ssl: false
+    force_provision: true
+    managed_aps:
+      - name: udm
+        mac: !secret unifi_udm_mac
+      - name: u6lite
+        mac: !secret unifi_u6l_mac
     monitored_ssids:
       - name: Guest
 

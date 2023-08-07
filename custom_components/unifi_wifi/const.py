@@ -3,6 +3,7 @@
 DOMAIN = 'unifi_wifi'
 CONF_MANAGED_APS = 'managed_aps'
 CONF_CHAR_COUNT = 'char_count'
+CONF_FORCE_PROVISION = 'force_provision'
 CONF_DELIMITER = 'delimiter'
 CONF_DELIMITER_TYPES = ['space','dash','none']
 CONF_MAX_LENGTH = 'max_length'

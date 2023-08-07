@@ -95,6 +95,11 @@ unifi_wifi:
   The *truthiness* of this variable is used to enable or disable SSL certificate verification. Set to false (or omit) if your Home Assistant instance uses an http-only URL, or you have a self-signed SSL certificate and haven’t installed the CA certificate to enable verification. Otherwise set to true.
 
   ---
+- **force_provision** <sup><sub>boolean</sub></sup> (optional, default: false)
+
+  The *truthiness* of this variable is used to enable or disable automatic force provisioning of adopted access points. Used in combination with ```managed_aps```, only the access points listed with be re-provisioned. If ```managed_aps``` is omitted, all access points adopted by the controller at the site will be re-provisioned. If set to false (or omitted), provisioning will be handled by the controller.
+
+  ---
 - **managed_aps** <sup><sub>list</sub></sup> (optional)
 
   List of access points to force provision after changing a wlan password. Both ```name``` and ```mac``` keys are required.

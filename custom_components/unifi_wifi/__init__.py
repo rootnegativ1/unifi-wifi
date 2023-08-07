@@ -27,6 +27,7 @@ from .const import (
     CONF_CHAR_COUNT,
     CONF_DELIMITER,
     CONF_DELIMITER_TYPES,
+    CONF_FORCE_PROVISION,
     CONF_MANAGED_APS,
     CONF_MAX_LENGTH,
     CONF_METHOD_TYPES,
@@ -67,6 +68,7 @@ _SITE_SCHEMA = vol.Schema({
     vol.Optional(CONF_SCAN_INTERVAL, default=600): cv.time_period,
     vol.Optional(CONF_UNIFI_OS, default=True): cv.boolean,
     vol.Optional(CONF_VERIFY_SSL, default=False): cv.boolean,
+    vol.Optional(CONF_FORCE_PROVISION, default=False): cv.boolean,
     vol.Optional(CONF_MANAGED_APS, default=[]): vol.All(
         cv.ensure_list, [_AP_SCHEMA]
     ),

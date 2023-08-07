@@ -4,12 +4,14 @@
 # https://book.pythontips.com/en/latest/args_and_kwargs.html
 # https://stackoverflow.com/questions/11277432/how-can-i-remove-a-key-from-a-python-dictionary
 # https://developers.home-assistant.io/docs/asyncio_working_with_async?_highlight=executor#calling-sync-functions-from-async
+# https://stackoverflow.com/questions/22351254/python-script-to-convert-image-into-byte-array
+# https://developers.home-assistant.io/docs/core/entity/image/#methods
 
 """Unifi Wifi coordinator and image classes."""
 
 from __future__ import annotations
 
-import logging, mimetypes, os, collections, aiohttp, async_timeout
+import logging, mimetypes, os, collections, aiohttp, async_timeout, qrcode, io
 
 from datetime import timedelta
 from homeassistant.components.image import ImageEntity
@@ -35,9 +37,11 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
-from homeassistant.util import dt as dt_util, slugify
+from homeassistant.util import dt as dt_util
+from homeassistant.util import slugify
 from .const import (
     DOMAIN,
+    CONF_FORCE_PROVISION,
     CONF_MANAGED_APS,
     CONF_MONITORED_SSIDS,
     CONF_SITE,
@@ -47,7 +51,6 @@ from .const import (
     UNIFI_NAME,
     UNIFI_PASSWORD
 )
-from . import qr_code as qr
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +79,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         self._port = conf[CONF_PORT]
         self._user = conf[CONF_USERNAME]
         self._password = conf[CONF_PASSWORD]
+        self._force = conf[CONF_FORCE_PROVISION]
+        self._aps = conf[CONF_MANAGED_APS]
         self._unifi_os = conf[CONF_UNIFI_OS]
         if self._unifi_os:
             self._login_prefix = '/api/auth'
@@ -83,7 +88,6 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         else:
             self._login_prefix = '/api'
             self._api_prefix = ''
-        self._aps = conf[CONF_MANAGED_APS]
 
     async def _async_update_data(self):
         try:
@@ -141,21 +145,38 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("_logout response: %s", await resp.json())
 
     async def _force_provision(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
-        if self._aps == []: return True
+        if not self._force: return True
 
         headers = {'Content-Type': 'application/json'}
         if self._unifi_os:
             headers['X-CSRF-Token'] = csrf_token
         kwargs = {'headers': headers}
-        path = f"{self._api_prefix}/api/s/{self.site}/cmd/devmgr"
 
-        for ap in self._aps:
+        aps = []
+        if self._aps == []:
+            # GET info on adopted access points from controller
+            path = f"{self._api_prefix}/api/s/default/stat/device-basic"
+            resp = await self._request(session, 'get', path, **kwargs)
+
+            json = await resp.json()
+            if DEBUG:
+                _LOGGER.debug("device-basic (_force_provision) response: %s", json)
+
+            data = json['data']
+            for device in data:
+                if device['type'] == 'uap' or (device['type'] == 'udm' and device['model'] == 'UDM'):
+                    aps.append(device)
+        else:
+            aps = self._aps
+
+        path = f"{self._api_prefix}/api/s/{self.site}/cmd/devmgr"
+        for ap in aps:
             payload = {'cmd': 'force-provision', 'mac': ap[CONF_MAC]}
             kwargs['json'] = payload
             resp = await self._request(session, 'post', path, **kwargs)
 
             if DEBUG:
-                _LOGGER.debug("_force_provision response for %s: %s", ap[CONF_NAME], await resp.json())
+                _LOGGER.debug("_force_provision response for %s: %s", ap[CONF_MAC], await resp.json())
 
         return True
 
@@ -204,7 +225,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             # https://docs.aiohttp.org/en/stable/client_advanced.html#cookie-safety
             cookie_jar=aiohttp.CookieJar(unsafe=True)
         ) as session:
-            res = await self._login(session)
+            resp = await self._login(session)
             csrf_token = ''
             if self._unifi_os:
                 csrf_token = resp.headers['X-CSRF-Token']
@@ -240,10 +261,11 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         """Initialize the image."""
         super().__init__(coordinator)
 
-        ind = self._update_index(ssid)
+        ind = self._find_index(ssid)
         password = self.coordinator.wlanconf[ind][UNIFI_PASSWORD]
 
-        utc = dt_util.utcnow()
+        # dt = dt_util.now() # int(dt_util.as_timestamp(dt))
+        dt = dt_util.utcnow()
         self._attributes = {
             CONF_ENABLED: self.coordinator.wlanconf[ind][CONF_ENABLED],
             CONF_NAME: self.coordinator.name,
@@ -252,14 +274,15 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             UNIFI_ID: self.coordinator.wlanconf[ind][UNIFI_ID],
             CONF_PASSWORD: password,
             'qr_text': f"WIFI:T:WPA;S:{ssid};P:{password};;",
-            'timestamp': int(dt_util.utc_to_timestamp(utc))
+            'timestamp': int(dt_util.utc_to_timestamp(dt))
         }
 
-        self._update_qr()
+        self._create_qr()
 
         self._attr_name = f"{self._attributes[CONF_NAME]} {ssid} wifi"
         self._attr_unique_id = slugify(f"{DOMAIN}_{self._attr_name}_image")
-        self._attr_image_last_updated = utc
+        # self._attr_content_type: str = "image/png"
+        self._attr_image_last_updated = dt
 
         verify_ssl = self.coordinator.verify_ssl
         if verify_ssl:
@@ -284,7 +307,6 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
         self._update_data()
-        self.async_write_ha_state()
 
     async def async_update(self) -> None:
         """Update the entity.
@@ -293,6 +315,13 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         """
         # await self.coordinator.async_refresh()
         await self.coordinator.async_request_refresh()
+
+    async def async_image(self) -> bytes | None:
+        """Return bytes of image.
+        
+        Needed for frontend cache to refresh correctly.
+        """
+        return self._code_bytes
 
     async def async_added_to_hass(self) -> None:
         """When entity is added to hass."""
@@ -322,19 +351,38 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         else:
             _LOGGER.debug("Unable to restore: %s", self._attr_name)
 
-    def _update_qr(self) -> None:
-        # should this be run as async?
-        # await hass.async_add_executor_job(qr.create, self._attributes[CONF_NAME], self._attributes[CONF_SSID], self._attributes[CONF_PASSWORD])
-        qr.create(self._attributes[CONF_NAME], self._attributes[CONF_SSID], self._attributes[CONF_PASSWORD])
+    def _create_qr(self) -> None:
+        qrtext = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
 
-    def _update_index(self, ssid):
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_H,
+            box_size=16,
+            border=2
+        )
+        qr.add_data(qrtext)
+        qr.make(fit=True)
+        # fill_color defaults to black and back_color defaults to white
+        #   so there's no need to pass them as arguments in make_image() method
+        #   https://github.com/lincolnloop/python-qrcode/blob/main/qrcode/image/pil.py#L12
+        #   img = qr.make_image(fill_color='black', back_color='white')
+        img = qr.make_image()
+
+        path = f"/config/www/{self._attributes[CONF_NAME]}_{self._attributes[CONF_SSID]}_wifi_qr.png"
+        img.save(path)
+
+        x = io.BytesIO()
+        img.save(x)
+        self._code_bytes = x.getvalue()
+
+    def _find_index(self, ssid):
         for wlan in self.coordinator.wlanconf:
             if wlan[UNIFI_NAME] == ssid:
                 return self.coordinator.wlanconf.index(wlan)
         raise ValueError(f"SSID {ssid} not found on coordinator {self.coordinator.name}")
 
     def _update_data(self) -> None:
-        ind = self._update_index(self._attributes[CONF_SSID])
+        ind = self._find_index(self._attributes[CONF_SSID])
         enabled_change = bool(self._attributes[CONF_ENABLED] != self.coordinator.wlanconf[ind][CONF_ENABLED])
         password_change = bool(self._attributes[CONF_PASSWORD] != self.coordinator.wlanconf[ind][UNIFI_PASSWORD])
 
@@ -349,10 +397,17 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attributes[UNIFI_ID] = self.coordinator.wlanconf[ind][UNIFI_ID]
             self._attributes['qr_text'] = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
 
-            utc = dt_util.utcnow()
-            self._attributes['timestamp'] = int(dt_util.utc_to_timestamp(utc))
-            self._attr_image_last_updated = utc
+            # dt = dt_util.now()
+            dt = dt_util.utcnow()
+            # self._attributes['timestamp'] = int(dt_util.as_timestamp(dt))
+            self._attributes['timestamp'] = int(dt_util.utc_to_timestamp(dt))
+            self._attr_image_last_updated = dt
+            # dt = datetime.now()
+            # self._attributes['timestamp'] = int(datetime.timestamp(dt))
+            # self._attr_image_last_updated = dt
 
-            self._update_qr()
+            self._create_qr()
+
+            self.async_write_ha_state()
 
             _LOGGER.debug("SSID %s on coordinator %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_NAME])
