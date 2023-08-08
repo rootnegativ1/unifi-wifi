@@ -281,7 +281,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
         self._attr_name = f"{self._attributes[CONF_NAME]} {ssid} wifi"
         self._attr_unique_id = slugify(f"{DOMAIN}_{self._attr_name}_image")
-        # self._attr_content_type: str = "image/png"
+        self._attr_content_type: str = "image/png"
         self._attr_image_last_updated = dt
 
         verify_ssl = self.coordinator.verify_ssl
@@ -313,7 +313,6 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
         Only used by the generic entity update service.
         """
-        # await self.coordinator.async_refresh()
         await self.coordinator.async_request_refresh()
 
     async def async_image(self) -> bytes | None:
@@ -368,9 +367,11 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         #   img = qr.make_image(fill_color='black', back_color='white')
         img = qr.make_image()
 
+        # generate QR code file
         path = f"/config/www/{self._attributes[CONF_NAME]}_{self._attributes[CONF_SSID]}_wifi_qr.png"
         img.save(path)
 
+        # generate QR code byte string needed for the frontend
         x = io.BytesIO()
         img.save(x)
         self._code_bytes = x.getvalue()
@@ -398,13 +399,11 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attributes['qr_text'] = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
 
             # dt = dt_util.now()
-            dt = dt_util.utcnow()
             # self._attributes['timestamp'] = int(dt_util.as_timestamp(dt))
+            # self._attr_image_last_updated = dt
+            dt = dt_util.utcnow()
             self._attributes['timestamp'] = int(dt_util.utc_to_timestamp(dt))
             self._attr_image_last_updated = dt
-            # dt = datetime.now()
-            # self._attributes['timestamp'] = int(datetime.timestamp(dt))
-            # self._attr_image_last_updated = dt
 
             self._create_qr()
 
