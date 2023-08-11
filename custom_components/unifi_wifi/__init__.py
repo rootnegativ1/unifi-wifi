@@ -4,6 +4,7 @@ import logging, aiohttp, asyncio
 import voluptuous as vol
 
 from datetime import datetime
+from homeassistant.auth.permissions.const import POLICY_CONTROL
 from homeassistant.const import (
     CONF_ENABLED,
     CONF_HOST,
@@ -17,7 +18,7 @@ from homeassistant.const import (
     CONF_VERIFY_SSL
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, Unauthorized
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.helpers.typing import ConfigType
@@ -176,6 +177,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     async def custom_password_service(call):
         """Set a custom password."""
+        if call.context.user_id:
+            user = await hass.auth.async_get_user(call.context.user_id)
+            if user is None:
+                raise UnknownUser(context=call.context, permission=POLICY_CONTROL)
+            if not user.is_admin:
+                raise Unauthorized()
+
         coordinator = call.data.get(CONF_NAME)
         ssid = call.data.get(CONF_SSID)
         password = call.data.get(CONF_PASSWORD)
@@ -187,6 +195,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     async def random_password_service(call):
         """Set a randomized password."""
+        if call.context.user_id:
+            user = await hass.auth.async_get_user(call.context.user_id)
+            if user is None:
+                raise UnknownUser(context=call.context, permission=POLICY_CONTROL)
+            if not user.is_admin:
+                raise Unauthorized()
+
         coordinator = call.data.get(CONF_NAME)
         ssid = call.data.get(CONF_SSID)
         method = call.data.get(CONF_METHOD)
@@ -213,6 +228,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     async def enable_wlan_service(call):
         """Enable or disable a specifed wlan."""
+        if call.context.user_id:
+            user = await hass.auth.async_get_user(call.context.user_id)
+            if user is None:
+                raise UnknownUser(context=call.context, permission=POLICY_CONTROL)
+            if not user.is_admin:
+                raise Unauthorized()
+
         coordinator = call.data.get(CONF_NAME)
         ssid = call.data.get(CONF_SSID)
         enabled = call.data.get(CONF_ENABLED)
