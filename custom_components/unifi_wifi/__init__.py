@@ -240,7 +240,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         enabled = call.data.get(CONF_ENABLED)
 
         ind = _coordinator_index(coordinator)
-        if _validate_ssid(coordinator, ssid):
+        if _validate_ssid(ind, ssid):
             payload = {'enabled': str(enabled).lower()}
             await coordinators[ind].set_wlanconf(ssid, payload)
 
