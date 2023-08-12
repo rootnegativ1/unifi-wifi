@@ -159,7 +159,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         for x in coordinators:
             if x.name == name:
                 return coordinators.index(x)
-        raise ValueError(f"The coordinator {coordinator} is not configured in YAML")
+        raise ValueError(f"The coordinator {name} is not configured in YAML")
 
     def _validate_ssid(ind, ssid) -> bool:
         """ Check if an ssid exists on specified coordinator."""
