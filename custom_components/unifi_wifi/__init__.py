@@ -123,7 +123,7 @@ SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
         vol.Required(CONF_NAME): cv.string,
         vol.Required(CONF_SSID): cv.string,
         vol.Required(CONF_METHOD): vol.In(CONF_METHOD_TYPES),
-        vol.Optional(CONF_DELIMITER, default='space'): vol.In(CONF_DELIMITER_TYPES),
+        vol.Optional(CONF_DELIMITER, default='dash'): vol.In(CONF_DELIMITER_TYPES),
         vol.Optional(CONF_MIN_LENGTH, default=5): vol.All(
             vol.Coerce(int), vol.Range(min=3, max=9)
         ),

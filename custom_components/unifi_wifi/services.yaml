@@ -56,8 +56,8 @@ random_password:
             - "xkcd"
           mode: dropdown
     delimiter:
-      name: Delimiter (xkcd only)
-      description: use spaces or dashes to separate passphrase words [xkcd only] (default=space)
+      name: Delimiter (xkcd & word)
+      description: use spaces or dashes to separate passphrase words [xkcd only] (default=dash)
       required: false
       example: "space"
       selector:

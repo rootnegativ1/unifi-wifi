@@ -26,7 +26,8 @@ def create(_method: str, _delimiter: str, _min_length: int, _max_length: int, _w
     elif _method == 'word':
         with open(WORD_FILE) as f:
             words = [word.strip() for word in f]
-            x = ' '.join(secrets.choice(words) for i in range(_word_count))
+            # x = ' '.join(secrets.choice(words) for i in range(_word_count))
+            x = _delimiter.join(secrets.choice(words) for i in range(_word_count))
 
     # https://docs.python.org/3/library/secrets.html#recipes-and-best-practices
     # 'char' method

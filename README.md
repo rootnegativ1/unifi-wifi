@@ -128,17 +128,17 @@ unifi_wifi:
   |---|---|---|
   | name | no | Name of the host + site combo as defined in YAML |
   | ssid | no | wireless network whose password you want to change |
-  | method | no | char = alphanumeric string (no spaces); word = diceware passphrase (space separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) |
-  | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd only] (default=space) |
-  | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
-  | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
-  | word_count | yes | number of words to generate [xkcd & word] (default=4, min=3, max=6) |
-  | char_count | yes | number of alphanumeric characters to generate [char only] (default=24, min=8, max=63) |
+  | method | no | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) |
+  | delimiter | yes | [xkcd & word] use spaces or dashes to separate passphrase words (default=dash) |
+  | min_length | yes | [xkcd only] minimum word length (default=5, min=3, max=9) |
+  | max_length | yes | [xkcd only] maximum word length (default=8, min=3, max=9) |
+  | word_count | yes | [xkcd & word] number of words to generate (default=4, min=3, max=6) |
+  | char_count | yes | [char only] number of alphanumeric characters to generate (default=24, min=8, max=63) |
 
   Change WLAN password on UniFi network to a randomly generated string
   - char --> 24-character alphanumeric string
   - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^4]. This wordfile is located in ```custom_components/unfi_wifi```
-  - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The main benefit of xkcdpass is having more granular control over the length of words chosen and characters used. Currently, this must be changed in ```custom_components/unfi_wifi/password.py```
+  - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
 
 ### ```unifi_wifi.enable_wlan```
   | Service data attribute | Optional | Description |
