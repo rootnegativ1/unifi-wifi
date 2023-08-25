@@ -44,8 +44,10 @@ from .const import (
     CONF_FORCE_PROVISION,
     CONF_MANAGED_APS,
     CONF_MONITORED_SSIDS,
+    CONF_QRTEXT,
     CONF_SITE,
     CONF_SSID,
+    CONF_TIMESTAMP,
     CONF_UNIFI_OS,
     UNIFI_ID,
     UNIFI_NAME,
@@ -55,7 +57,6 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DEBUG = True
-
 
 class UnifiWifiCoordinator(DataUpdateCoordinator):
     """Representation of a Unifi Wifi coordinator"""
@@ -273,8 +274,8 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             CONF_SSID: ssid,
             UNIFI_ID: self.coordinator.wlanconf[ind][UNIFI_ID],
             CONF_PASSWORD: password,
-            'qr_text': f"WIFI:T:WPA;S:{ssid};P:{password};;",
-            'timestamp': int(dt_util.utc_to_timestamp(dt))
+            CONF_QRTEXT: f"WIFI:T:WPA;S:{ssid};P:{password};;",
+            CONF_TIMESTAMP: int(dt_util.utc_to_timestamp(dt))
         }
 
         self._create_qr()
@@ -343,9 +344,19 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             #   and must be set to a datetime object
             self._attr_image_last_updated = dt_util.parse_datetime(last_state.state)
 
-            for attr in [CONF_ENABLED, CONF_NAME, CONF_SITE, CONF_SSID, UNIFI_ID, CONF_PASSWORD, 'qr_text', 'timestamp']:
+            for attr in [
+                CONF_ENABLED,
+                CONF_NAME,
+                CONF_SITE,
+                CONF_SSID,
+                UNIFI_ID,
+                CONF_PASSWORD,
+                CONF_QRTEXT, 
+                CONF_TIMESTAMP
+            ]:
                 if attr in last_state.attributes:
                     self._attributes[attr] = last_state.attributes[attr]
+
             _LOGGER.debug("Restored: %s", self._attr_name)
         else:
             _LOGGER.debug("Unable to restore: %s", self._attr_name)
@@ -396,13 +407,13 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         if password_change:
             self._attributes[CONF_PASSWORD] = self.coordinator.wlanconf[ind][UNIFI_PASSWORD]
             self._attributes[UNIFI_ID] = self.coordinator.wlanconf[ind][UNIFI_ID]
-            self._attributes['qr_text'] = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
+            self._attributes[CONF_QRTEXT] = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
 
             # dt = dt_util.now()
-            # self._attributes['timestamp'] = int(dt_util.as_timestamp(dt))
+            # self._attributes[CONF_TIMESTAMP] = int(dt_util.as_timestamp(dt))
             # self._attr_image_last_updated = dt
             dt = dt_util.utcnow()
-            self._attributes['timestamp'] = int(dt_util.utc_to_timestamp(dt))
+            self._attributes[CONF_TIMESTAMP] = int(dt_util.utc_to_timestamp(dt))
             self._attr_image_last_updated = dt
 
             self._create_qr()
