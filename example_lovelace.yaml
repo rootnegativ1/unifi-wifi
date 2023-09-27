@@ -4,14 +4,11 @@ cards:
     cards:
       - type: markdown
         content: >-
-          ## {{state_attr('image.myhouse_guest_wifi','friendly_name')}} <ha-icon icon="mdi:wifi" />
+          # {{ state_attr('image.myhouse_guest_wifi', 'ssid') }} <ha-icon icon="mdi:wifi" />
 
           ---
 
-          # {{ states.device_tracker | selectattr('state', 'eq', 'home') |
-          selectattr('attributes.essid','defined') |
-          selectattr('attributes.essid', 'eq', "Guest") | list | count }}
-          Clients
+          ## {{ states('sensor.guest') }} Clients
       - type: picture-entity
         entity: image.myhouse_guest_wifi
         show_state: false
@@ -36,8 +33,9 @@ cards:
     content: >-
       # {{ state_attr("image.myhouse_guest_wifi","password") }}
 
-      Last Updated on {{ state_attr("image.myhouse_guest_wifi","timestamp") | int |
-      timestamp_custom("%m/%d/%y at %I:%M %p", True) }}
+      Last Updated on {{ state_attr("image.myhouse_guest_wifi","timestamp") |
+      int(0) | timestamp_custom("%m/%d/%y at %I:%M %p", True, "2/31/69 at 04:00
+      PM") }}
 
       *HINT: If it looks like a space, then yes it's a space*
   - type: custom:text-input-row
