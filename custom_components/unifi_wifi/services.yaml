@@ -57,7 +57,7 @@ random_password:
           mode: dropdown
     delimiter:
       name: Delimiter
-      description: [xkcd & word] Use spaces or dashes to separate passphrase words (default=dash)
+      description: Use spaces or dashes to separate passphrase words [xkcd & word] (default=dash)
       required: false
       example: "space"
       selector:
@@ -69,7 +69,7 @@ random_password:
           mode: dropdown
     min_length:
       name: Min Length
-      description: [xkcd only] Minimum word length (default=5, min=3, max=9)
+      description: Minimum word length [xkcd only] (default=5, min=3, max=9)
       required: false
       example: 5
       selector:
@@ -78,7 +78,7 @@ random_password:
           max: 9
     max_length:
       name: Max Length
-      description: [xkcd only] Maximum word length (default=8, min=3, max=9)
+      description: Maximum word length [xkcd only] (default=8, min=3, max=9)
       required: false
       example: 8
       selector:
@@ -87,7 +87,7 @@ random_password:
           max: 9
     word_count:
       name: Word Count
-      description: [xkcd & word] Number of words to generate (default=4, min=3, max=6)
+      description: Number of words to generate [xkcd & word] (default=4, min=3, max=6)
       required: false
       example: 4
       selector:
@@ -96,7 +96,7 @@ random_password:
           max: 6
     char_count:
       name: Character Count
-      description: [char only] Number of alphanumeric characters to generate (default=24, min=8, max=63)
+      description: Number of alphanumeric characters to generate [char only] (default=24, min=8, max=63)
       required: false
       example: 24
       selector:
