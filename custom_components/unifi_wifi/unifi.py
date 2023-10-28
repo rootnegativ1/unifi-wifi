@@ -11,7 +11,9 @@
 
 from __future__ import annotations
 
-import logging, mimetypes, os, collections, aiohttp, async_timeout, qrcode, io
+# import logging, mimetypes, os, collections, aiohttp, async_timeout, qrcode, io
+# are mimetypes and os necessary?
+import logging, collections, aiohttp, async_timeout, qrcode, io
 
 from datetime import timedelta
 from homeassistant.components.image import ImageEntity
@@ -28,10 +30,11 @@ from homeassistant.const import (
     STATE_UNAVAILABLE,
     STATE_UNKNOWN
 )
-from homeassistant.core import callback
+from homeassistant.core import callback, HomeAssistant
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.httpx_client import get_async_client
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -54,14 +57,15 @@ from .const import (
     UNIFI_PASSWORD
 )
 
+DEBUG = True
+
 _LOGGER = logging.getLogger(__name__)
 
-DEBUG = True
 
 class UnifiWifiCoordinator(DataUpdateCoordinator):
     """Representation of a Unifi Wifi coordinator"""
 
-    def __init__(self, hass, conf):
+    def __init__(self, hass: HomeAssistant, conf: ConfigType):
         super().__init__(
             hass,
             _LOGGER,
@@ -197,9 +201,9 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
         return True
 
-    # this function is only used in _async_update_data()
-    # which is used to keep the coordinator and its entities updated
     async def _update_wlanconf(self) -> bool:
+        # this function is only used in _async_update_data()
+        # which is used to keep the coordinator and its entities updated
         async with aiohttp.ClientSession(
             # https://docs.aiohttp.org/en/stable/client_advanced.html#ssl-control-for-tcp-sockets
             connector=aiohttp.TCPConnector(ssl=False),
@@ -258,7 +262,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
     """Representation of a Unifi Wifi image."""
 
-    def __init__(self, hass, coordinator, ssid):
+    def __init__(self, hass: HomeAssistant, coordinator: UnifiWifiCoordinator, ssid: str):
         """Initialize the image."""
         super().__init__(coordinator)
 
@@ -387,10 +391,10 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         img.save(x)
         self._code_bytes = x.getvalue()
 
-    def _find_index(self, ssid):
-        for wlan in self.coordinator.wlanconf:
-            if wlan[UNIFI_NAME] == ssid:
-                return self.coordinator.wlanconf.index(wlan)
+    def _find_index(self, ssid: str):
+        for idx, x in enumerate(self.coordinator.wlanconf):
+            if x[UNIFI_NAME] == ssid:
+                return idx
         raise ValueError(f"SSID {ssid} not found on coordinator {self.coordinator.name}")
 
     def _update_data(self) -> None:

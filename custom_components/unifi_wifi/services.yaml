@@ -45,7 +45,7 @@ random_password:
         text:
     method:
       name: Method
-      description: char = alphanumeric string (no spaces); word = diceware passphrase (space separated); xkcd = diceware passphrase using XKCD generator (space separated)
+      description: char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated)
       required: true
       example: "word"
       selector:
@@ -56,8 +56,8 @@ random_password:
             - "xkcd"
           mode: dropdown
     delimiter:
-      name: Delimiter (xkcd & word)
-      description: use spaces or dashes to separate passphrase words [xkcd only] (default=dash)
+      name: Delimiter
+      description: [xkcd & word] Use spaces or dashes to separate passphrase words (default=dash)
       required: false
       example: "space"
       selector:
@@ -68,8 +68,8 @@ random_password:
             - "none"
           mode: dropdown
     min_length:
-      name: Min Length (xkcd only)
-      description: Minimum word length (default=5, min=3, max=9)
+      name: Min Length
+      description: [xkcd only] Minimum word length (default=5, min=3, max=9)
       required: false
       example: 5
       selector:
@@ -77,8 +77,8 @@ random_password:
           min: 3
           max: 9
     max_length:
-      name: Max Length (xkcd only)
-      description: Maximum word length (default=8, min=3, max=9)
+      name: Max Length
+      description: [xkcd only] Maximum word length (default=8, min=3, max=9)
       required: false
       example: 8
       selector:
@@ -86,8 +86,8 @@ random_password:
           min: 3
           max: 9
     word_count:
-      name: Word Count (xkcd & word)
-      description: Number of words to generate (default=4, min=3, max=6)
+      name: Word Count
+      description: [xkcd & word] Number of words to generate (default=4, min=3, max=6)
       required: false
       example: 4
       selector:
@@ -95,8 +95,8 @@ random_password:
           min: 3
           max: 6
     char_count:
-      name: Character Count (char only)
-      description: Number of alphanumeric characters to generate (default=24, min=8, max=63)
+      name: Character Count
+      description: [char only] Number of alphanumeric characters to generate (default=24, min=8, max=63)
       required: false
       example: 24
       selector:
