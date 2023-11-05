@@ -44,9 +44,12 @@ from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 from .const import (
     DOMAIN,
+    CONF_COORDINATOR,
     CONF_FORCE_PROVISION,
     CONF_MANAGED_APS,
     CONF_MONITORED_SSIDS,
+    CONF_NETWORK_NAME,
+    CONF_PPSK,
     CONF_QRTEXT,
     CONF_SITE,
     CONF_SSID,
@@ -54,10 +57,13 @@ from .const import (
     CONF_UNIFI_OS,
     UNIFI_ID,
     UNIFI_NAME,
-    UNIFI_PASSWORD
+    UNIFI_NETWORKCONF_ID,
+    UNIFI_PASSPHRASE,
+    UNIFI_PASSWORD,
+    UNIFI_PRESHARED_KEYS
 )
 
-DEBUG = True
+DEBUG = False
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,6 +83,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         )
 
         self.wlanconf = []
+        self.networkconf = []
         self.name = conf[CONF_NAME]
         self.verify_ssl = conf[CONF_VERIFY_SSL]
         self.site = conf[CONF_SITE]
@@ -99,7 +106,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             # Note: asyncio.TimeoutError and aiohttp.ClientError are already
             # handled by the data update coordinator.
             async with async_timeout.timeout(10):
-                return await self._update_wlanconf()
+                return await self._update_info()
         except ConnectionError as err:
             # # Raising ConfigEntryAuthFailed will cancel future updates
             # # and start a config flow with SOURCE_REAUTH (async_step_reauth)
@@ -201,7 +208,23 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
         return True
 
-    async def _update_wlanconf(self) -> bool:
+    async def _get_networkconf(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
+        """Get networkconf info from a UniFi controller."""
+        headers = {}
+        if self._unifi_os:
+            headers['X-CSRF-Token'] = csrf_token
+        kwargs = {'headers': headers}
+        path = f"{self._api_prefix}/api/s/{self.site}/rest/networkconf"
+        resp = await self._request(session, 'get', path, **kwargs)
+
+        json = await resp.json()
+        self.networkconf = json['data']
+        if DEBUG:
+            _LOGGER.debug("_get_networkconf response: %s", await resp.text())
+
+        return True
+
+    async def _update_info(self) -> bool:
         # this function is only used in _async_update_data()
         # which is used to keep the coordinator and its entities updated
         async with aiohttp.ClientSession(
@@ -217,6 +240,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
                 csrf_token = resp.headers['X-CSRF-Token']
 
             await self._get_wlanconf(session, csrf_token)
+
+            await self._get_networkconf(session, csrf_token)
 
             await self._logout(session, csrf_token)
 
@@ -237,8 +262,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
             await self._get_wlanconf(session, csrf_token)
 
-            ind = [wlan[UNIFI_NAME] for wlan in self.wlanconf].index(ssid)
-            idno = self.wlanconf[ind][UNIFI_ID]
+            idssid = [wlan[UNIFI_NAME] for wlan in self.wlanconf].index(ssid)
+            idno = self.wlanconf[idssid][UNIFI_ID]
 
             headers = {'Content-Type': 'application/json'}
             if self._unifi_os:
@@ -262,38 +287,45 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
     """Representation of a Unifi Wifi image."""
 
-    def __init__(self, hass: HomeAssistant, coordinator: UnifiWifiCoordinator, ssid: str):
+    def __init__(self, hass: HomeAssistant, coordinator: UnifiWifiCoordinator, ssid: str, key: dict = {}):
         """Initialize the image."""
         super().__init__(coordinator)
 
-        ind = self._find_index(ssid)
-        password = self.coordinator.wlanconf[ind][UNIFI_PASSWORD]
+        idssid = self._ssid_index(ssid)
 
-        # dt = dt_util.now() # int(dt_util.as_timestamp(dt))
         dt = dt_util.utcnow()
         self._attributes = {
-            CONF_ENABLED: self.coordinator.wlanconf[ind][CONF_ENABLED],
-            CONF_NAME: self.coordinator.name,
+            CONF_ENABLED: self.coordinator.wlanconf[idssid][CONF_ENABLED],
+            CONF_COORDINATOR: self.coordinator.name,
             CONF_SITE: self.coordinator.site,
             CONF_SSID: ssid,
-            UNIFI_ID: self.coordinator.wlanconf[ind][UNIFI_ID],
-            CONF_PASSWORD: password,
-            CONF_QRTEXT: f"WIFI:T:WPA;S:{ssid};P:{password};;",
+            UNIFI_ID: self.coordinator.wlanconf[idssid][UNIFI_ID],
             CONF_TIMESTAMP: int(dt_util.utc_to_timestamp(dt))
         }
 
-        self._create_qr()
+        if bool(key):
+            self._attributes[CONF_PASSWORD] = key[UNIFI_PASSWORD]
+            self._attributes[UNIFI_NETWORKCONF_ID] = key[UNIFI_NETWORKCONF_ID]
+            idnetwork = [x[UNIFI_ID] for x in self.coordinator.networkconf].index(key[UNIFI_NETWORKCONF_ID])
+            self._attributes[CONF_NETWORK_NAME] = self.coordinator.networkconf[idnetwork][UNIFI_NAME]
+            self._attr_name = f"{self._attributes[CONF_COORDINATOR]} {ssid} {self._attributes[CONF_NETWORK_NAME]} wifi"            
+        else:
+            self._attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_PASSPHRASE]
+            self._attr_name = f"{self._attributes[CONF_COORDINATOR]} {ssid} wifi"
 
-        self._attr_name = f"{self._attributes[CONF_NAME]} {ssid} wifi"
+        self._attributes[CONF_PPSK] = bool(key)
+        self._attributes[CONF_QRTEXT] = f"WIFI:T:WPA;S:{ssid};P:{self._attributes[CONF_PASSWORD]};;"
         self._attr_unique_id = slugify(f"{DOMAIN}_{self._attr_name}_image")
         self._attr_content_type: str = "image/png"
         self._attr_image_last_updated = dt
 
+        self._create_qr()
+
         verify_ssl = self.coordinator.verify_ssl
         if verify_ssl:
-            self._attr_image_url = f"https://127.0.0.1:8123/local/{self._attributes[CONF_NAME]}_{ssid}_wifi_qr.png"
+            self._attr_image_url = f"https://127.0.0.1:8123/local/{slugify(self._attr_name)}_qr.png"
         else:
-            self._attr_image_url = f"http://127.0.0.1:8123/local/{self._attributes[CONF_NAME]}_{ssid}_wifi_qr.png"
+            self._attr_image_url = f"http://127.0.0.1:8123/local/{slugify(self._attr_name)}_qr.png"
 
         self._client = get_async_client(hass, verify_ssl=verify_ssl)
         self.access_tokens: collections.deque = collections.deque([], 2)
@@ -348,18 +380,21 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             #   and must be set to a datetime object
             self._attr_image_last_updated = dt_util.parse_datetime(last_state.state)
 
-            for attr in [
-                CONF_ENABLED,
-                CONF_NAME,
-                CONF_SITE,
-                CONF_SSID,
-                UNIFI_ID,
-                CONF_PASSWORD,
-                CONF_QRTEXT, 
-                CONF_TIMESTAMP
-            ]:
-                if attr in last_state.attributes:
-                    self._attributes[attr] = last_state.attributes[attr]
+            # for attr in [
+                # CONF_ENABLED,
+                # CONF_COORDINATOR,
+                # CONF_SITE,
+                # CONF_SSID,
+                # CONF_PPSK,
+                # UNIFI_ID,
+                # CONF_PASSWORD,
+                # CONF_QRTEXT, 
+                # CONF_TIMESTAMP,
+                # UNIFI_NETWORKCONF_ID,
+                # CONF_NETWORK_NAME
+            # ]:
+                # if attr in last_state.attributes:
+                    # self._attributes[attr] = last_state.attributes[attr]
 
             _LOGGER.debug("Restored: %s", self._attr_name)
         else:
@@ -383,7 +418,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         img = qr.make_image()
 
         # generate QR code file
-        path = f"/config/www/{self._attributes[CONF_NAME]}_{self._attributes[CONF_SSID]}_wifi_qr.png"
+        path = f"/config/www/{slugify(self._attr_name)}_qr.png"
         img.save(path)
 
         # generate QR code byte string needed for the frontend
@@ -391,31 +426,45 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         img.save(x)
         self._code_bytes = x.getvalue()
 
-    def _find_index(self, ssid: str):
-        for idx, x in enumerate(self.coordinator.wlanconf):
-            if x[UNIFI_NAME] == ssid:
-                return idx
-        raise ValueError(f"SSID {ssid} not found on coordinator {self.coordinator.name}")
+    def _ssid_index(self, ssid: str):
+        """Find the array index of a specific ssid."""
+        try:
+            return [x[UNIFI_NAME] for x in self.coordinator.wlanconf].index(ssid)
+        except ValueError as err:
+            raise PlatformNotReady(f"SSID {ssid} not found on coordinator {self.coordinator.name}: {err}")
+
+    def _network_index(self, network_id: str):
+        """Find the array index of a specific network in wlanconf."""
+        try:
+            idssid = self._ssid_index(self._attributes[CONF_SSID])
+            return [x[UNIFI_NETWORKCONF_ID] for x in self.coordinator.wlanconf[idssid][UNIFI_PRESHARED_KEYS]].index(network_id)
+        except ValueError as err:
+            raise PlatformNotReady(f"Network {network_id} not found on coordinator {self.coordinator.name}: {err}")
 
     def _update_data(self) -> None:
-        ind = self._find_index(self._attributes[CONF_SSID])
-        enabled_change = bool(self._attributes[CONF_ENABLED] != self.coordinator.wlanconf[ind][CONF_ENABLED])
-        password_change = bool(self._attributes[CONF_PASSWORD] != self.coordinator.wlanconf[ind][UNIFI_PASSWORD])
+        """SOMETHING SOMETHING SOMETHING."""
+        idssid = self._ssid_index(self._attributes[CONF_SSID])
+        enabled_state = self.coordinator.wlanconf[idssid][CONF_ENABLED]
+        if self._attributes[CONF_PPSK]:
+            idnetwork = self._network_index(self._attributes[UNIFI_NETWORKCONF_ID])
+            new_password = self.coordinator.wlanconf[idssid][UNIFI_PRESHARED_KEYS][idnetwork][UNIFI_PASSWORD]
+        else:
+            new_password = self.coordinator.wlanconf[idssid][UNIFI_PASSPHRASE]
+
+        enabled_change = bool(self._attributes[CONF_ENABLED] != enabled_state)
+        password_change = bool(self._attributes[CONF_PASSWORD] != new_password)
 
         if enabled_change:
-            self._attributes[CONF_ENABLED] = self.coordinator.wlanconf[ind][CONF_ENABLED]
-            self._attributes[UNIFI_ID] = self.coordinator.wlanconf[ind][UNIFI_ID]
+            self._attributes[CONF_ENABLED] = enabled_state
+            self._attributes[UNIFI_ID] = self.coordinator.wlanconf[idssid][UNIFI_ID]
 
-            _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_NAME], 'enabled' if self._attributes[CONF_ENABLED] == 'true' else 'disabled')
+            _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'enabled' if bool(self._attributes[CONF_ENABLED]) else 'disabled')
 
         if password_change:
-            self._attributes[CONF_PASSWORD] = self.coordinator.wlanconf[ind][UNIFI_PASSWORD]
-            self._attributes[UNIFI_ID] = self.coordinator.wlanconf[ind][UNIFI_ID]
+            self._attributes[CONF_PASSWORD] = new_password
+            self._attributes[UNIFI_ID] = self.coordinator.wlanconf[idssid][UNIFI_ID]
             self._attributes[CONF_QRTEXT] = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
 
-            # dt = dt_util.now()
-            # self._attributes[CONF_TIMESTAMP] = int(dt_util.as_timestamp(dt))
-            # self._attr_image_last_updated = dt
             dt = dt_util.utcnow()
             self._attributes[CONF_TIMESTAMP] = int(dt_util.utc_to_timestamp(dt))
             self._attr_image_last_updated = dt
@@ -424,4 +473,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
             self.async_write_ha_state()
 
-            _LOGGER.debug("SSID %s on coordinator %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_NAME])
+            if self._attributes[CONF_PPSK]:
+                _LOGGER.debug("SSID (ppsk) %s (%s) on coordinator %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_NETWORK_NAME], self._attributes[CONF_COORDINATOR])
+            else:
+                _LOGGER.debug("SSID %s on coordinator %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR])

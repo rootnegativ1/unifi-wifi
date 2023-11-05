@@ -4,7 +4,7 @@
 
 # Unifi Wifi Home Assistant Integration
 
-Change passwords and generate QR codes for WLANs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are represented as image entities and can be generated per network SSID. These images are located in ```/config/www```. If a password is changed through the controller-side web UI, the associated QR code in Home Assistant is automatically updated (based on scan_interval).
+Change passwords and generate QR codes for SSIDs and PPSKs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are represented as image entities and can be generated per network SSID. These images are located in ```/config/www```. If a password is changed through the controller-side web UI, the associated QR code in Home Assistant is automatically updated (based on scan_interval).
 
 ## Manual Installation
 Download the contents of ```custom_components``` to your ```/config/custom_components``` directory
@@ -117,8 +117,7 @@ unifi_wifi:
 ### ```unifi_wifi.custom_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | name | no | Name of the host + site combo as defined in YAML |
-  | ssid | no | wireless network whose password you want to change |
+  | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | password | no | set a user-provided password |
 
   Change WLAN password on UniFi network to a custom string
@@ -126,8 +125,7 @@ unifi_wifi:
 ### ```unifi_wifi.random_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | name | no | Name of the host + site combo as defined in YAML |
-  | ssid | no | wireless network whose password you want to change |
+  | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | method | no | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) |
   | delimiter | yes | [xkcd & word] use spaces or dashes to separate passphrase words (default=dash) |
   | min_length | yes | [xkcd only] minimum word length (default=5, min=3, max=9) |
@@ -143,8 +141,7 @@ unifi_wifi:
 ### ```unifi_wifi.enable_wlan```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | name | no | Name of the host + site combo as defined in YAML |
-  | ssid | no | wireless network whose password you want to change |
+  | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | enabled | no | enabled = true, disabled = false |
 
   Enable (or disable) a specific WLAN on a UniFi network controller

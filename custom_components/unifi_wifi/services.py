@@ -8,33 +8,43 @@ import voluptuous as vol
 from homeassistant.auth.permissions.const import POLICY_CONTROL
 from homeassistant.const import (
     CONF_ENABLED,
+    CONF_ENTITY_ID,
     CONF_METHOD,
     CONF_NAME,
-    CONF_PASSWORD
+    CONF_PASSWORD,
+    CONF_TARGET
 )
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError, Unauthorized
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import IntegrationError, Unauthorized
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import service
 from homeassistant.helpers.typing import ConfigType
 from typing import List # required for type hinting (function annotation) using List
 from .const import (
     DOMAIN,
     CONF_CHAR_COUNT,
+    CONF_COORDINATOR,
+    CONF_DATA,
     CONF_DELIMITER,
     CONF_DELIMITER_TYPES,
     CONF_MAX_LENGTH,
     CONF_METHOD_TYPES,
     CONF_MIN_LENGTH,
+    CONF_PPSK,
     CONF_SSID,
     CONF_WORD_COUNT,
     SERVICE_CUSTOM_PASSWORD,
     SERVICE_RANDOM_PASSWORD,
     SERVICE_ENABLE_WLAN,
     UNIFI_NAME,
-    UNIFI_PASSWORD
+    UNIFI_NETWORKCONF_ID,
+    UNIFI_PASSPHRASE,
+    UNIFI_PRESHARED_KEYS
 )
 from .unifi import UnifiWifiCoordinator
 from . import password as pw
+
+DEBUG = False
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,17 +60,6 @@ def _is_ascii(obj: ConfigType):
         raise ValueError("Password may only contain ASCII characters.")
     return obj
 
-SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.All(
-    vol.Schema({
-        vol.Required(CONF_NAME): cv.string,
-        vol.Required(CONF_SSID): cv.string,
-        vol.Required(CONF_PASSWORD): vol.All(
-            cv.string, vol.Length(min=8, max=63)
-        ),
-    }),
-    _is_ascii
-)
-
 def _check_word_lengths(obj: ConfigType):
     """Verify minimum and maximum word lengths are logical."""
     if obj[CONF_MIN_LENGTH] > obj[CONF_MAX_LENGTH]:
@@ -68,10 +67,28 @@ def _check_word_lengths(obj: ConfigType):
         raise vol.Invalid(msg)
     return obj
 
+TARGET_SCHEMA = vol.Any(
+    vol.Schema({
+        vol.Required(CONF_ENTITY_ID): vol.All(
+            cv.ensure_list, cv.entity_ids
+        )
+    }),
+    cv.entity_id
+)
+
+SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.All(
+    vol.Schema({
+        vol.Required(CONF_TARGET): TARGET_SCHEMA,
+        vol.Required(CONF_PASSWORD): vol.All(
+            cv.string, vol.Length(min=8, max=63)
+        ),
+    }),
+    _is_ascii
+)
+
 SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
     vol.Schema({
-        vol.Required(CONF_NAME): cv.string,
-        vol.Required(CONF_SSID): cv.string,
+        vol.Required(CONF_TARGET): TARGET_SCHEMA,
         vol.Required(CONF_METHOD): vol.In(CONF_METHOD_TYPES),
         vol.Optional(CONF_DELIMITER, default='dash'): vol.In(CONF_DELIMITER_TYPES),
         vol.Optional(CONF_MIN_LENGTH, default=5): vol.All(
@@ -91,36 +108,127 @@ SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
 )
 
 SERVICE_ENABLE_WLAN_SCHEMA = vol.Schema({
-    vol.Required(CONF_NAME): cv.string,
-    vol.Required(CONF_SSID): cv.string,
+    vol.Required(CONF_TARGET): TARGET_SCHEMA,
     vol.Required(CONF_ENABLED): cv.boolean,
 })
 
 
 async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoordinator]) -> bool:
 
-    def _coordinator_index(name: str):
-        """Find the array index of a specific coordinator."""
-        for idx, x in enumerate(coordinators):
-            if x.name == name:
-                return idx
-        raise ValueError(f"The coordinator {name} is not configured in YAML")
+    def _coordinator_index(_coordinator: str):
+        """Find the index of a specific coordinator."""
+        try:
+            #return [x[CONF_NAME] for x in coordinators].index(_coordinator)
+            return [x.name for x in coordinators].index(_coordinator)
+        except ValueError as err:
+            raise IntegrationError(f"Coordinator {_coordinator} is not configured in YAML: {err}")
 
-    def _validate_ssid(ind: int, ssid: str) -> bool:
-        """ Check if an ssid exists on specified coordinator."""
-        # https://github.com/home-assistant/core/blob/dev/homeassistant/core.py#L423
-        # NOT SURE IF this should be async_refresh() or async_request_refresh()
-        # I THINK it should be async_request_refresh() so that (near) simultaneous
-        #    service calls don't bombard the api on a unifi controller
-        hass.add_job(coordinators[ind].async_request_refresh())
 
-        for x in coordinators[ind].wlanconf:
-            if x[UNIFI_NAME] == ssid:
-                return True
-        raise ValueError(f"The SSID {ssid} does not exist on coordinator {coordinators[ind].name}")
-        return False
+    def _ssid_index(_index: int, _ssid: str):
+        """Find the index of an ssid on a specific coordinator."""
+        hass.add_job(coordinators[_index].async_request_refresh())
 
-    async def custom_password_service(call):
+        try:
+            return [x[UNIFI_NAME] for x in coordinators[_index].wlanconf].index(_ssid)
+        except ValueError as err:
+            raise IntegrationError(f"SSID {_ssid} does not exist on coordinator {coordinators[_index].name}: {err}")
+
+
+    def _entities_list(call: ServiceCall) -> list:
+        """Return a list of entity IDs."""
+        # FIGURE OUT HOW TO DO A DOMAIN CHECK
+        # TO VERIFY ENTITY BELONGS TO THIS CUSTOM COMPONENT
+        # _LOGGER.debug("matched entity %s has domain %s with context %s", k.entity_id, k.domain, k.as_dict())
+
+        target = call.data.get(CONF_TARGET)
+        try:
+            entities = target[CONF_ENTITY_ID]
+        except:
+            entities = [target]
+        return entities
+
+
+    async def change_password(call: ServiceCall, _random: bool = False):
+        """Send custom or randomly generated password to a coordinator."""
+        entities = _entities_list(call)
+        states = hass.states.async_all('image')
+
+        password = call.data.get(CONF_PASSWORD)
+        method = call.data.get(CONF_METHOD)
+        delimiter_raw = call.data.get(CONF_DELIMITER)
+        min_length = call.data.get(CONF_MIN_LENGTH)
+        max_length = call.data.get(CONF_MAX_LENGTH)
+        word_count = call.data.get(CONF_WORD_COUNT)
+        char_count = call.data.get(CONF_CHAR_COUNT)
+        if delimiter_raw == 'dash':
+            delimiter = '-'
+        elif delimiter_raw == 'space':
+            delimiter = ' '
+        elif delimiter_raw == 'underscore':
+            delimiter = '_'
+        else:
+            delimiter = ''
+
+        ppsk_requests = []
+        for k in states:
+            if k.entity_id in entities:
+
+                idcoord = _coordinator_index(k.attributes[CONF_COORDINATOR])
+                coordinator = coordinators[idcoord]
+                ssid = k.attributes[CONF_SSID]
+
+                if _random:
+                    password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
+
+                if bool(k.attributes[CONF_PPSK]):                    
+                    keys = coordinator.wlanconf[_ssid_index(idcoord, ssid)][UNIFI_PRESHARED_KEYS]
+                    network_id = k.attributes[UNIFI_NETWORKCONF_ID]
+                    idkey = [x[UNIFI_NETWORKCONF_ID] for x in keys].index(network_id)
+  
+                    keys[idkey] = {
+                        CONF_PASSWORD: password,
+                        UNIFI_NETWORKCONF_ID: network_id
+                    }
+
+                    try:
+                        idppskcoord = [x[CONF_COORDINATOR] for x in ppsk_requests].index(k.attributes[CONF_COORDINATOR])
+                        if DEBUG: _LOGGER.debug("found coordinator entry")
+                        try:
+                            idppskssid = [y[CONF_SSID] for y in ppsk_requests[idppskcoord][CONF_DATA]].index(k.attributes[CONF_SSID])
+                            if DEBUG: _LOGGER.debug("found ssid entry")
+                            ppsk_requests[idppskcoord][CONF_DATA][idppskssid][UNIFI_PRESHARED_KEYS] = keys                            
+                        except ValueError:
+                            if DEBUG: _LOGGER.debug("new ssid entry")
+                            entry = {
+                                CONF_SSID: k.attributes[CONF_SSID],
+                                UNIFI_PRESHARED_KEYS: keys
+                            }
+                            ppsk_requests[idppskcoord][CONF_DATA].append(entry)
+                    except ValueError:
+                        if DEBUG: _LOGGER.debug("new coordinatory entry")
+                        entry = {
+                            CONF_COORDINATOR: k.attributes[CONF_COORDINATOR],
+                            CONF_DATA: [{
+                                CONF_SSID: ssid,
+                                UNIFI_PRESHARED_KEYS: keys
+                            }]
+                        }
+                        ppsk_requests.append(entry)
+                else:
+                    payload = {UNIFI_PASSPHRASE: password}
+                    if DEBUG: _LOGGER.debug("ssid %s with payload %s", ssid, payload)
+                    await coordinator.set_wlanconf(ssid, payload)
+
+        for x in ppsk_requests:
+            idcoord = _coordinator_index(x[CONF_COORDINATOR])
+            coordinator = coordinators[idcoord]
+            for y in x[CONF_DATA]:
+                payload = {UNIFI_PRESHARED_KEYS: y[UNIFI_PRESHARED_KEYS]}
+                if DEBUG: _LOGGER.debug("ssid %s with payload %s", y[CONF_SSID], payload)
+                await coordinator.set_wlanconf(y[CONF_SSID], payload)
+
+
+    async def custom_password_service(call: ServiceCall):
         """Set a custom password."""
         if call.context.user_id:
             user = await hass.auth.async_get_user(call.context.user_id)
@@ -129,16 +237,10 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             if not user.is_admin:
                 raise Unauthorized()
 
-        coordinator = call.data.get(CONF_NAME)
-        ssid = call.data.get(CONF_SSID)
-        password = call.data.get(CONF_PASSWORD)
+        await change_password(call, False)
 
-        ind = _coordinator_index(coordinator)
-        if _validate_ssid(ind, ssid):
-            payload = {UNIFI_PASSWORD: password}
-            await coordinators[ind].set_wlanconf(ssid, payload)
 
-    async def random_password_service(call):
+    async def random_password_service(call: ServiceCall):
         """Set a randomized password."""
         if call.context.user_id:
             user = await hass.auth.async_get_user(call.context.user_id)
@@ -147,32 +249,11 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             if not user.is_admin:
                 raise Unauthorized()
 
-        coordinator = call.data.get(CONF_NAME)
-        ssid = call.data.get(CONF_SSID)
-        method = call.data.get(CONF_METHOD)
-        delimiter_raw = call.data.get(CONF_DELIMITER)
-        min_length = call.data.get(CONF_MIN_LENGTH)
-        max_length = call.data.get(CONF_MAX_LENGTH)
-        word_count = call.data.get(CONF_WORD_COUNT)
-        char_count = call.data.get(CONF_CHAR_COUNT)
+        await change_password(call, True)
 
-        if delimiter_raw == 'space':
-            delimiter = ' '
-        elif delimiter_raw == 'dash':
-            delimiter = '-'
-        elif delimiter_raw == 'none':
-            delimiter = ''
-        else:
-            raise ValueError(f"invalid delimiter option ({delimiter_raw})")
 
-        ind = _coordinator_index(coordinator)
-        if _validate_ssid(ind, ssid):
-            password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
-            payload = {UNIFI_PASSWORD: password}
-            await coordinators[ind].set_wlanconf(ssid, payload)
-
-    async def enable_wlan_service(call):
-        """Enable or disable a specifed wlan."""
+    async def enable_wlan_service(call: ServiceCall):
+        """Enable or disable an SSID."""
         if call.context.user_id:
             user = await hass.auth.async_get_user(call.context.user_id)
             if user is None:
@@ -180,14 +261,20 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             if not user.is_admin:
                 raise Unauthorized()
 
-        coordinator = call.data.get(CONF_NAME)
-        ssid = call.data.get(CONF_SSID)
-        enabled = call.data.get(CONF_ENABLED)
+        entities = _entities_list(call)
+        states = hass.states.async_all('image')
 
-        ind = _coordinator_index(coordinator)
-        if _validate_ssid(ind, ssid):
-            payload = {'enabled': str(enabled).lower()}
-            await coordinators[ind].set_wlanconf(ssid, payload)
+        enabled = call.data.get(CONF_ENABLED)
+        payload = {'enabled': str(enabled).lower()}
+
+        for k in states:
+            if k.entity_id in entities:
+                idcoord = _coordinator_index(k.attributes['coordinator'])
+                coordinator = coordinators[idcoord]
+                ssid = k.attributes['ssid']
+                if DEBUG: _LOGGER.debug("ssid %s with payload %s", ssid, payload)
+                await coordinator.set_wlanconf(ssid, payload)
+
 
     hass.services.async_register(
         DOMAIN,

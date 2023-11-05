@@ -4,20 +4,15 @@ custom_password:
   name: Custom Password
   description: Change WLAN password on UniFi network to a custom string
   fields:
-    name:
-      name: Name
-      description: Name of the host + site combo as defined in YAML
+    target:
+      name: Target
+      description: Wireless network(s) whose password you want to change
       required: true
-      example: "myhouse"
       selector:
-        text:
-    ssid:
-      name: SSID
-      description: Wireless network whose password you want to change
-      required: true
-      example: "Guest"
-      selector:
-        text:
+        target:
+          entity:
+            integration: unifi_wifi
+            domain: image
     password:
       name: Password
       description: User-provided password
@@ -29,20 +24,15 @@ random_password:
   name: Random Password
   description: Change WLAN password on UniFi network to a randomly generated string
   fields:
-    name:
-      name: Name
-      description: Name of the host + site combo as defined in YAML
+    target:
+      name: Target
+      description: Wireless network(s) whose password you want to change
       required: true
-      example: "myhouse"
       selector:
-        text:
-    ssid:
-      name: SSID
-      description: Wireless network whose password you want to change
-      required: true
-      example: "Guest"
-      selector:
-        text:
+        target:
+          entity:
+            integration: unifi_wifi
+            domain: image
     method:
       name: Method
       description: char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated)
@@ -57,14 +47,15 @@ random_password:
           mode: dropdown
     delimiter:
       name: Delimiter
-      description: Use spaces or dashes to separate passphrase words [xkcd & word] (default=dash)
+      description: Use spaces, dashes, or underscores to separate passphrase words [xkcd & word] (default=dash)
       required: false
       example: "space"
       selector:
         select:
           options:
-            - "space"
             - "dash"
+            - "space"
+            - "underscore"
             - "none"
           mode: dropdown
     min_length:
@@ -103,25 +94,20 @@ random_password:
         number:
           min: 8
           max: 63
-
+          
 enable_wlan:
   name: Enable/Disable WLANs
   description: Enable (or disable) a specific WLAN on a UniFi network
   fields:
-    name:
-      name: Name
-      description: Name of the host + site combo as defined in YAML
+    target:
+      name: Target
+      description: Wireless network(s) whose password you want to change
       required: true
-      example: "myhouse"
       selector:
-        text:
-    ssid:
-      name: SSID
-      description: Wireless network you want to toggle
-      required: true
-      example: "Guest"
-      selector:
-        text:
+        target:
+          entity:
+            integration: unifi_wifi
+            domain: image
     enabled:
       name: Enabled
       description: Set the enable state
