@@ -39,12 +39,15 @@ async def async_setup_platform(
         for wlan in conf[CONF_MONITORED_SSIDS]:
             # check if private pre-shared keys are configured
             keys = []
-            ppsk = False
+            # ppsk = False
             for y in x.wlanconf:
                 if y[UNIFI_NAME] == wlan[CONF_NAME]:
-                    keys = y[UNIFI_PRESHARED_KEYS]
-                    ppsk = True
-                    break
+                    try:
+                        keys = y[UNIFI_PRESHARED_KEYS]
+                        # ppsk = True
+                        break
+                    except:
+                        break
 
             if keys:
                 for k in keys:
