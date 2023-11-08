@@ -4,10 +4,8 @@ import logging, asyncio
 import voluptuous as vol
 
 from homeassistant.const import (
-    CONF_ENABLED,
     CONF_HOST,
     CONF_MAC,
-    CONF_METHOD,
     CONF_NAME,
     CONF_PASSWORD,
     CONF_PORT,
@@ -22,19 +20,13 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import slugify
 from .const import (
     DOMAIN,
-    CONF_CHAR_COUNT,
-    CONF_DELIMITER,
-    CONF_DELIMITER_TYPES,
     CONF_FORCE_PROVISION,
     CONF_MANAGED_APS,
-    CONF_MAX_LENGTH,
-    CONF_METHOD_TYPES,
-    CONF_MIN_LENGTH,
     CONF_MONITORED_SSIDS,
+    CONF_PPSK,
     CONF_SITE,
     CONF_SSID,
-    CONF_UNIFI_OS,
-    CONF_WORD_COUNT
+    CONF_UNIFI_OS
 )
 from .services import register_services
 from .unifi import UnifiWifiCoordinator
@@ -49,6 +41,7 @@ _AP_SCHEMA = vol.Schema({
 
 _SSID_SCHEMA = vol.Schema({
     vol.Required(CONF_NAME): cv.string,
+    # provide a way to list specific ppsk vlans
 })
 
 _SITE_SCHEMA = vol.Schema({

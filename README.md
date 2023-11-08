@@ -4,7 +4,7 @@
 
 # Unifi Wifi Home Assistant Integration
 
-Change passwords and generate QR codes for WLANs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are represented as image entities and can be generated per network SSID. These images are located in ```/config/www```. If a password is changed through the controller-side web UI, the associated QR code in Home Assistant is automatically updated (based on scan_interval).
+Change passwords and generate QR codes for SSIDs and PPSKs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are represented as image entities and can be generated per network SSID. These images are located in ```/config/www```. If a password is changed through the controller-side web UI, the associated QR code in Home Assistant is automatically updated (based on scan_interval).
 
 ## Manual Installation
 Download the contents of ```custom_components``` to your ```/config/custom_components``` directory
@@ -102,7 +102,7 @@ unifi_wifi:
   ---
 - **managed_aps** <sup><sub>list</sub></sup> (optional)
 
-  List of access points to force provision after changing a wlan password. Both ```name``` and ```mac``` keys are required.
+  List of access points to force provision after changing a SSID password. Both ```name``` and ```mac``` keys are required.
 
   ---
 
@@ -117,37 +117,73 @@ unifi_wifi:
 ### ```unifi_wifi.custom_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | name | no | Name of the host + site combo as defined in YAML |
-  | ssid | no | wireless network whose password you want to change |
+  | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | password | no | set a user-provided password |
 
-  Change WLAN password on UniFi network to a custom string
+  Change SSID password(s) on UniFi network to a custom string.
+
+  ```yaml
+    # example
+    service: unifi_wifi.custom_password
+    data:
+      target:
+        entity_id:
+          - image.titan_testnetwork_wifi
+          - image.titan_testnetworkppsk_guest_wifi
+      password: thisISaTesT
+  ```
+  
+  > [!NOTE]  
+  > If you try setting private preshared keys on the same SSID to the same password, only the first VLAN (alphabetically) will have its password changed.
 
 ### ```unifi_wifi.random_password```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | name | no | Name of the host + site combo as defined in YAML |
-  | ssid | no | wireless network whose password you want to change |
+  | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | method | no | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) |
-  | delimiter | yes | [xkcd & word] use spaces or dashes to separate passphrase words (default=dash) |
-  | min_length | yes | [xkcd only] minimum word length (default=5, min=3, max=9) |
-  | max_length | yes | [xkcd only] maximum word length (default=8, min=3, max=9) |
-  | word_count | yes | [xkcd & word] number of words to generate (default=4, min=3, max=6) |
-  | char_count | yes | [char only] number of alphanumeric characters to generate (default=24, min=8, max=63) |
+  | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd & word] (default=dash) |
+  | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
+  | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
+  | word_count | yes | number of words to generate [xkcd & word] (default=4, min=3, max=6) |
+  | char_count | yes | number of alphanumeric characters to generate [char only] (default=24, min=8, max=63) |
 
-  Change WLAN password on UniFi network to a randomly generated string
+  Change SSID password on UniFi network to a randomly generated string
   - char --> 24-character alphanumeric string
   - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^4]. This wordfile is located in ```custom_components/unfi_wifi```
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
 
+  ```yaml
+    # example
+    service: unifi_wifi.random_password
+    data:
+      target:
+        entity_id:
+          - image.titan_testnetwork_wifi
+          - image.titan_testnetworkppsk_guest_wifi
+      method: word
+  ```
+
+  > [!NOTE]  
+  > Randomizing multiple private preshared keys on the same SSID will result in multiple random passwords generated. Which is the way it should be anyways ...
+
 ### ```unifi_wifi.enable_wlan```
   | Service data attribute | Optional | Description |
   |---|---|---|
-  | name | no | Name of the host + site combo as defined in YAML |
-  | ssid | no | wireless network whose password you want to change |
+  | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | enabled | no | enabled = true, disabled = false |
 
-  Enable (or disable) a specific WLAN on a UniFi network controller
+  Enable (or disable) a specific SSID on a UniFi network controller
+
+  ```yaml
+    # example
+    service: unifi_wifi.random_password
+    data:
+      target:
+        entity_id:
+          - image.titan_testnetwork_wifi
+          - image.titan_testnetworkppsk_guest_wifi
+      enable: false
+  ```
 
 [^1]: https://my.home-assistant.io/create-link/
 [^2]: https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp
