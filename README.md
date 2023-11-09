@@ -4,22 +4,22 @@
 
 # Unifi Wifi Home Assistant Integration
 
-Change passwords and generate QR codes for SSIDs and PPSKs on UniFi Network controllers. Passwords can be custom or random strings using the included services. QR codes are represented as image entities and can be generated per network SSID. These images are located in ```/config/www```. If a password is changed through the controller-side web UI, the associated QR code in Home Assistant is automatically updated (based on scan_interval).
+Change SSID passwords and private preshared keys (PPSKs) as well as generate QR codes for them on UniFi Network controllers. Passwords & PPSKs can be custom or random strings using the included services. QR codes are represented as image entities and generated per network SSID. These images are located in ```/config/www```. If a password is changed through the controller-side web UI, the associated QR code is automatically updated in Home Assistant.
 
 ## Manual Installation
 Download the contents of ```custom_components``` to your ```/config/custom_components``` directory
 
 ## HACS Installation
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rootnegativ1&repository=unifi-wifi&category=integration) [^1]
-1. Go to any of the sections (integrations, frontend, automation).
-2. Click on the 3 dots in the top right corner.
+1. Go to any of the sections (integrations, frontend, automation)
+2. Click on the 3 dots in the top right corner
 3. Select "Custom repositories"
-4. Add the URL ```https://github.com/rootnegativ1/unifi-wifi``` to the repository.
-5. Select the ```integration``` category.
-6. Click the "ADD" button.
+4. Add the URL ```https://github.com/rootnegativ1/unifi-wifi``` to the repository
+5. Select the ```integration``` category
+6. Click the "ADD" button
 
 ## Configuration
-To enable this component in your installation, add the following to your configuration.yaml file:
+To enable this component, add the following to your configuration.yaml file:
 ```yaml
 # Example configuration.yaml entry
 unifi_wifi:
@@ -44,7 +44,7 @@ unifi_wifi:
 ### Configuration Variables
 - **name** <sup><sub>string</sub></sup> *REQUIRED*
 
-  Unique name to identify each host + site combo (e.g. operating multiple sites on the same controller)
+  Unique name to identify each host + site combo (e.g. operating multiple sites on the same controller or managing multiple controllers)
 
   ---
 
@@ -82,11 +82,14 @@ unifi_wifi:
 
   How often, in seconds, Home Assistant should poll the controller.
 
+  > [!NOTE]  
+  > If you change a password through the controller UI multiple times before ```scan_interval``` triggers an update, only the last change will be detected.
+  
   ---
 
 - **unifi_os** <sup><sub>boolean</sub></sup> (optional, default: true)
 
-  The *truthiness* of this variable is used to determine api url paths. Set to true (or omit) if your controller is running on UniFi OS; otherwise set to false. Only use this if you're running controller software separately (i.e. Docker, Raspberry Pi, etc).
+  The *truthiness* of this variable is used to determine API url paths. Set to true (or omit) if your controller is running on UniFi OS; otherwise set to false. Only use this if you're running controller software separately (i.e. Docker, Raspberry Pi, etc).
 
   ---
 
@@ -102,13 +105,16 @@ unifi_wifi:
   ---
 - **managed_aps** <sup><sub>list</sub></sup> (optional)
 
-  List of access points to force provision after changing a SSID password. Both ```name``` and ```mac``` keys are required.
+  List of access points to force provision after changing a SSID password. The ```name``` key is user generated and does not affect anything other than log output. The ```mac``` key must be the MAC address of the access point which can be found in the contorller UI. Both ```name``` and ```mac``` keys are required.
 
   ---
 
 - **monitored_ssids** <sup><sub>list</sub></sup> (optional)
 
-  Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, QR code generation text, and timestamp of last update.
+  Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update.
+  
+  > [!NOTE]  
+  > Currently, when adding a PPSK-enabled SSID, images for each PPSK-connected VLAN will be created. The ability to specify which VLAN PPSK(s) to watch is not yet supported.
 
   ---
 
@@ -128,8 +134,8 @@ unifi_wifi:
     data:
       target:
         entity_id:
-          - image.titan_testnetwork_wifi
-          - image.titan_testnetworkppsk_guest_wifi
+          - image.myhouse_guest_wifi
+          - image.myhouse_testnetworkppsk_guest_wifi
       password: thisISaTesT
   ```
   
@@ -158,8 +164,8 @@ unifi_wifi:
     data:
       target:
         entity_id:
-          - image.titan_testnetwork_wifi
-          - image.titan_testnetworkppsk_guest_wifi
+          - image.myhouse_guest_wifi
+          - image.myhouse_testnetworkppsk_guest_wifi
       method: word
   ```
 
@@ -180,8 +186,8 @@ unifi_wifi:
     data:
       target:
         entity_id:
-          - image.titan_testnetwork_wifi
-          - image.titan_testnetworkppsk_guest_wifi
+          - image.myhouse_guest_wifi
+          - image.myhouse_testnetworkppsk_guest_wifi
       enable: false
   ```
 

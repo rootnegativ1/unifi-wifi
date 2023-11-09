@@ -44,8 +44,9 @@ template:
       press:
         - service: unifi_wifi.random_password
           data:
-            name: myhouse
-            ssid: Guest
+            #name: myhouse
+            #ssid: Guest
+            target: image.myhouse_guest_wifi
             method: word
 
     - name: 'Guest Wifi Default'
@@ -53,8 +54,9 @@ template:
       press:
         - service: unifi_wifi.custom_password
           data:
-            name: myhouse
-            ssid: Guest
+            #name: myhouse
+            #ssid: Guest
+            target: image.myhouse_guest_wifi
             password: "SOME-KNOWN-DEFAULT"
 
     - name: 'Guest Wifi Custom'
@@ -62,8 +64,9 @@ template:
       press:
         - service: unifi_wifi.custom_password
           data:
-            name: myhouse
-            ssid: Guest
+            #name: myhouse
+            #ssid: Guest
+            target: image.myhouse_guest_wifi
             password: "{{states('input_text.guest_wifi')}}"
         - service: input_text.set_value
           data:
