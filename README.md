@@ -42,81 +42,35 @@ unifi_wifi:
 ```
 
 ### Configuration Variables
-- **name** <sup><sub>string</sub></sup> *REQUIRED*
+- **name** <sup><sub>string</sub></sup> *REQUIRED* &nbsp; Unique name to identify each host + site combo (e.g. operating multiple sites on the same controller or managing multiple controllers)
 
-  Unique name to identify each host + site combo (e.g. operating multiple sites on the same controller or managing multiple controllers)
+- **host** <sup><sub>string</sub></sup> *REQUIRED* &nbsp; Hostname or IP address of the controller.
 
-  ---
+- **username** <sup><sub>string</sub></sup> *REQUIRED* &nbsp; A valid username on the controller. At a minimum, this user should have Site Admin level permissions for the Network. It's recommended to create a separate local account to use with this integration.
 
-- **host** <sup><sub>string</sub></sup> *REQUIRED*
+- **password** <sup><sub>string</sub></sup> *REQUIRED* &nbsp; The password for the above username
 
-  Hostname or IP address of the controller.
+- **site** <sup><sub>string</sub></sup> (optional, default: default) &nbsp; Only necessary if you operate multiple sites on the same controller.
 
-  ---
+- **port** <sup><sub>string</sub></sup> (optional, default: 443) &nbsp; In combination with host, the port at which the controller can be reached. UniFi OS controllers must be accessed on 443.
 
-- **username** <sup><sub>string</sub></sup> *REQUIRED*
-
-  A valid username on the controller. At a minimum, this user should have Site Admin level permissions for the Network. It's recommended to create a separate local account to use with this integration.
-
-  ---
-
-- **password** <sup><sub>string</sub></sup> *REQUIRED*
-
-  The password for the above username
-
-  ---
-
-- **site** <sup><sub>string</sub></sup> (optional, default: default)
-
-  Only necessary if you operate multiple sites on the same controller.
-
-  ---
-
-- **port** <sup><sub>string</sub></sup> (optional, default: 443)
-
-  In combination with host, the port at which the controller can be reached. UniFi OS controllers must be accessed on 443.
-
-  ---
-
-- **scan_interval** <sup><sub>string</sub></sup> (optional, default: 600)
-
-  How often, in seconds, Home Assistant should poll the controller.
+- **scan_interval** <sup><sub>string</sub></sup> (optional, default: 600) &nbsp; How often, in seconds, Home Assistant should poll the controller.
 
   > [!NOTE]  
-  > If you change a password through the controller UI multiple times before ```scan_interval``` triggers an update, only the last change will be detected.
-  
-  ---
+  > *If you change a password through the controller UI multiple times before ```scan_interval``` triggers an update, only the last change will be detected.*
 
-- **unifi_os** <sup><sub>boolean</sub></sup> (optional, default: true)
+- **unifi_os** <sup><sub>boolean</sub></sup> (optional, default: true) &nbsp; The *truthiness* of this variable is used to determine API url paths. Set to true (or omit) if your controller is running on UniFi OS; otherwise set to false. Only use this if you're running controller software separately (i.e. Docker, Raspberry Pi, etc).
 
-  The *truthiness* of this variable is used to determine API url paths. Set to true (or omit) if your controller is running on UniFi OS; otherwise set to false. Only use this if you're running controller software separately (i.e. Docker, Raspberry Pi, etc).
+- **verify_ssl** <sup><sub>boolean</sub></sup> (optional, default: false) &nbsp; The *truthiness* of this variable is used to enable or disable SSL certificate verification. Set to false (or omit) if your Home Assistant instance uses an http-only URL, or you have a self-signed SSL certificate and haven’t installed the CA certificate to enable verification. Otherwise set to true.
 
-  ---
+- **force_provision** <sup><sub>boolean</sub></sup> (optional, default: false) &nbsp; The *truthiness* of this variable is used to enable or disable automatic force provisioning of adopted access points. Used in combination with ```managed_aps```, only the access points listed with be re-provisioned. If ```managed_aps``` is omitted, all access points adopted by the controller at the site will be re-provisioned. If set to false (or omitted), provisioning will be handled by the controller.
 
-- **verify_ssl** <sup><sub>boolean</sub></sup> (optional, default: false)
+- **managed_aps** <sup><sub>list</sub></sup> (optional) &nbsp; List of access points to force provision after changing a SSID password. The ```name``` key is user generated and does not affect anything other than log output. The ```mac``` key must be the MAC address of the access point which can be found in the contorller UI. Both ```name``` and ```mac``` keys are required.
 
-  The *truthiness* of this variable is used to enable or disable SSL certificate verification. Set to false (or omit) if your Home Assistant instance uses an http-only URL, or you have a self-signed SSL certificate and haven’t installed the CA certificate to enable verification. Otherwise set to true.
-
-  ---
-- **force_provision** <sup><sub>boolean</sub></sup> (optional, default: false)
-
-  The *truthiness* of this variable is used to enable or disable automatic force provisioning of adopted access points. Used in combination with ```managed_aps```, only the access points listed with be re-provisioned. If ```managed_aps``` is omitted, all access points adopted by the controller at the site will be re-provisioned. If set to false (or omitted), provisioning will be handled by the controller.
-
-  ---
-- **managed_aps** <sup><sub>list</sub></sup> (optional)
-
-  List of access points to force provision after changing a SSID password. The ```name``` key is user generated and does not affect anything other than log output. The ```mac``` key must be the MAC address of the access point which can be found in the contorller UI. Both ```name``` and ```mac``` keys are required.
-
-  ---
-
-- **monitored_ssids** <sup><sub>list</sub></sup> (optional)
-
-  Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update.
+- **monitored_ssids** <sup><sub>list</sub></sup> (optional) &nbsp; Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update.
   
   > [!NOTE]  
-  > Currently, when adding a PPSK-enabled SSID, images for each PPSK-connected VLAN will be created. The ability to specify which VLAN PPSK(s) to watch is not yet supported.
-
-  ---
+  > *Currently, when adding a PPSK-enabled SSID, images for each PPSK-connected VLAN will be created. The ability to specify which VLAN PPSK(s) to watch is not yet supported.*
 
 ## Services
 
@@ -140,7 +94,7 @@ unifi_wifi:
   ```
   
   > [!NOTE]  
-  > If you try setting private preshared keys on the same SSID to the same password, only the first VLAN (alphabetically) will have its password changed.
+  > *If you try setting private preshared keys on the same SSID to the same password, only the first VLAN (alphabetically) will have its password changed.*
 
 ### ```unifi_wifi.random_password```
   | Service data attribute | Optional | Description |
@@ -170,7 +124,7 @@ unifi_wifi:
   ```
 
   > [!NOTE]  
-  > Randomizing multiple private preshared keys on the same SSID will result in multiple random passwords generated. Which is the way it should be anyways ...
+  > *Randomizing multiple private preshared keys on the same SSID will result in multiple random passwords generated. Which is the way it should be anyways ...*
 
 ### ```unifi_wifi.enable_wlan```
   | Service data attribute | Optional | Description |
