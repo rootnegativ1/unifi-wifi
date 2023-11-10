@@ -380,7 +380,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             #   and must be set to a datetime object
             self._attr_image_last_updated = dt_util.parse_datetime(last_state.state)
 
-            # for attr in [
+            for attr in [
                 # CONF_ENABLED,
                 # CONF_COORDINATOR,
                 # CONF_SITE,
@@ -389,12 +389,12 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
                 # UNIFI_ID,
                 # CONF_PASSWORD,
                 # CONF_QRTEXT, 
-                # CONF_TIMESTAMP,
+                CONF_TIMESTAMP,
                 # UNIFI_NETWORKCONF_ID,
                 # CONF_NETWORK_NAME
-            # ]:
-                # if attr in last_state.attributes:
-                    # self._attributes[attr] = last_state.attributes[attr]
+            ]:
+                if attr in last_state.attributes:
+                    self._attributes[attr] = last_state.attributes[attr]
 
             _LOGGER.debug("Restored: %s", self._attr_name)
         else:
