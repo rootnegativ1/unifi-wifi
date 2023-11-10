@@ -33,9 +33,8 @@ cards:
     content: >-
       # {{ state_attr("image.myhouse_guest_wifi","password") }}
 
-      Last Updated on {{ state_attr("image.myhouse_guest_wifi","timestamp") |
-      int(0) | timestamp_custom("%m/%d/%y at %I:%M %p", True, "2/31/69 at 04:00
-      PM") }}
+      Last Updated on {{ states("image.myhouse_guest_wifi")  | as_timestamp() |
+      timestamp_custom("%m/%d/%y at %I:%M %p", True, "2/31/69 at 04:00 PM") }}
 
       *HINT: If it looks like a space, then yes it's a space*
   - type: custom:text-input-row
