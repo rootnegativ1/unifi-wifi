@@ -9,14 +9,16 @@ from homeassistant.auth.permissions.const import POLICY_CONTROL
 from homeassistant.const import (
     CONF_ENABLED,
     CONF_ENTITY_ID,
+    Platform,
     CONF_METHOD,
     CONF_NAME,
     CONF_PASSWORD,
+    CONF_PLATFORM,
     CONF_TARGET
 )
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import IntegrationError, Unauthorized
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, entity_registry
 from homeassistant.helpers import service
 from homeassistant.helpers.typing import ConfigType
 from typing import List # required for type hinting (function annotation) using List
@@ -134,24 +136,35 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             raise IntegrationError(f"SSID {_ssid} does not exist on coordinator {coordinators[_index].name}: {err}")
 
 
-    def _entities_list(call: ServiceCall) -> list:
-        """Return a list of entity IDs."""
-        # FIGURE OUT HOW TO DO A DOMAIN CHECK
-        # TO VERIFY ENTITY BELONGS TO THIS CUSTOM COMPONENT
-        # _LOGGER.debug("matched entity %s has domain %s with context %s", k.entity_id, k.domain, k.as_dict())
-
+    def _valid_entities(call: ServiceCall) -> List[str]:
+        """Return a list of entity IDs belonging to the platform."""
         target = call.data.get(CONF_TARGET)
         try:
             entities = target[CONF_ENTITY_ID]
         except:
             entities = [target]
-        return entities
+
+        ent_reg = entity_registry.async_get(hass)
+        valid_entities = []
+        for x in entities:
+            entry = ent_reg.async_get(x)
+            try:
+                entry_dict = entry.as_partial_dict
+                if DEBUG: _LOGGER.debug("registry entry: %s", entry_dict)
+                if entry_dict[CONF_PLATFORM] == DOMAIN:
+                    valid_entities.append(x)
+                else:
+                    _LOGGER.debug("Entity ID %s does not belong to platform %s", x, DOMAIN)
+            except AttributeError as err:
+                _LOGGER.debug("Entity ID %s is not valid: %s", x, err)
+
+        return valid_entities
 
 
     async def change_password(call: ServiceCall, _random: bool = False):
         """Send custom or randomly generated password to a coordinator."""
-        entities = _entities_list(call)
-        states = hass.states.async_all('image')
+        entities = _valid_entities(call)
+        states = hass.states.async_all(Platform.IMAGE)
 
         if _random:
             method = call.data.get(CONF_METHOD)
@@ -168,7 +181,6 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                 delimiter = '_'
             else:
                 delimiter = ''
-            # random password(s) generated later
         else:
             password = call.data.get(CONF_PASSWORD)
 
@@ -176,17 +188,17 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         for k in states:
             if k.entity_id in entities:
 
-                idcoord = _coordinator_index(k.attributes[CONF_COORDINATOR])
+                idcoord = _coordinator_index(k.attributes.get(CONF_COORDINATOR))
                 coordinator = coordinators[idcoord]
-                ssid = k.attributes[CONF_SSID]
+                ssid = k.attributes.get(CONF_SSID)
 
                 if _random:
                     password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
 
-                ppsk = bool(k.attributes[CONF_PPSK])
+                ppsk = bool(k.attributes.get(CONF_PPSK))
                 if ppsk:
                     keys = coordinator.wlanconf[_ssid_index(idcoord, ssid)][UNIFI_PRESHARED_KEYS]
-                    network_id = k.attributes[UNIFI_NETWORKCONF_ID]
+                    network_id = k.attributes.get(UNIFI_NETWORKCONF_ID)
                     idkey = [x[UNIFI_NETWORKCONF_ID] for x in keys].index(network_id)
   
                     keys[idkey] = {
@@ -195,10 +207,10 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                     }
 
                 try:
-                    idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes[CONF_COORDINATOR])
+                    idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes.get(CONF_COORDINATOR))
                     if DEBUG: _LOGGER.debug("found coordinator")
                     try:
-                        idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes[CONF_SSID])
+                        idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes.get(CONF_SSID))
                         if DEBUG: _LOGGER.debug("found ssid")
                         if ppsk:
                             requests[idrequestcoord][CONF_DATA][idrequestssid][UNIFI_PRESHARED_KEYS] = keys                            
@@ -211,20 +223,20 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                         if DEBUG: _LOGGER.debug("new ssid entry")
                         if ppsk:
                             entry = {
-                                CONF_SSID: k.attributes[CONF_SSID],
+                                CONF_SSID: k.attributes.get(CONF_SSID),
                                 UNIFI_PRESHARED_KEYS: keys
                             }
                         else:
                             entry = {
-                                CONF_SSID: k.attributes[CONF_SSID],
+                                CONF_SSID: k.attributes.get(CONF_SSID),
                                 CONF_PASSWORD: password
                             }
                         requests[idrequestcoord][CONF_DATA].append(entry)
                 except ValueError:
-                    if DEBUG: _LOGGER.debug("new coordinatory entry")
+                    if DEBUG: _LOGGER.debug("new coordinator entry")
                     if ppsk:
                         entry = {
-                            CONF_COORDINATOR: k.attributes[CONF_COORDINATOR],
+                            CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
                             CONF_DATA: [{
                                 CONF_SSID: ssid,
                                 UNIFI_PRESHARED_KEYS: keys
@@ -232,7 +244,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                         }
                     else:
                         entry = {
-                            CONF_COORDINATOR: k.attributes[CONF_COORDINATOR],
+                            CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
                             CONF_DATA: [{
                                 CONF_SSID: ssid,
                                 CONF_PASSWORD: password
@@ -286,8 +298,8 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             if not user.is_admin:
                 raise Unauthorized()
 
-        entities = _entities_list(call)
-        states = hass.states.async_all('image')
+        entities = _valid_entities(call)
+        states = hass.states.async_all(Platform.IMAGE)
 
         enabled = call.data.get(CONF_ENABLED)
 
@@ -295,29 +307,29 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         for k in states:
             if k.entity_id in entities:
 
-                idcoord = _coordinator_index(k.attributes[CONF_COORDINATOR])
+                idcoord = _coordinator_index(k.attributes.get(CONF_COORDINATOR))
                 coordinator = coordinators[idcoord]
-                ssid = k.attributes[CONF_SSID]
+                ssid = k.attributes.get(CONF_SSID)
 
                 try:
-                    idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes[CONF_COORDINATOR])
+                    idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes.get(CONF_COORDINATOR))
                     if DEBUG: _LOGGER.debug("found coordinator")
                     try:
-                        idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes[CONF_SSID])
+                        idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes.get(CONF_SSID))
                         if DEBUG: _LOGGER.debug("found ssid")
                         # DO NOTHING
                         # requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_ENABLED] = enabled
                     except ValueError:
                         if DEBUG: _LOGGER.debug("new ssid entry")
                         entry = {
-                            CONF_SSID: k.attributes[CONF_SSID],
+                            CONF_SSID: k.attributes.get(CONF_SSID),
                             CONF_ENABLED: enabled
                         }
                         requests[idrequestcoord][CONF_DATA].append(entry)
                 except ValueError:
-                    if DEBUG: _LOGGER.debug("new coordinatory entry")
+                    if DEBUG: _LOGGER.debug("new coordinator entry")
                     entry = {
-                        CONF_COORDINATOR: k.attributes[CONF_COORDINATOR],
+                        CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
                         CONF_DATA: [{
                             CONF_SSID: ssid,
                             CONF_ENABLED: enabled
