@@ -15,7 +15,7 @@ from homeassistant.const import (
     CONF_PLATFORM,
     CONF_TARGET
 )
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, Context
 from homeassistant.exceptions import IntegrationError, Unauthorized
 from homeassistant.helpers import config_validation as cv, entity_registry
 from homeassistant.helpers import service
@@ -135,30 +135,38 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             raise IntegrationError(f"SSID {_ssid} does not exist on coordinator {coordinators[_index].name}: {err}")
 
 
-    async def _valid_entity_states(target: str | List[str]) -> List[str]:
+    async def _valid_entity_states(_target: str | List[str], _context: Context) -> List[str]:
         """Return a list of states filtered by entity IDs belonging to the platform."""
         try:
-            entities = target[CONF_ENTITY_ID]
+            entities = _target[CONF_ENTITY_ID]
         except:
-            entities = [target]
+            entities = [_target]
 
         ent_reg = entity_registry.async_get(hass)
         valid_entities = []
-        for x in entities:
-            entry = ent_reg.async_get(x)
+        for entity_id in entities:
+            entry = ent_reg.async_get(entity_id)
             try:
                 entry_dict = entry.as_partial_dict
                 if DEBUG: _LOGGER.debug("registry entry: %s", entry_dict)
                 if entry_dict[CONF_PLATFORM] == DOMAIN:
-                    valid_entities.append(x)
+                    valid_entities.append(entity_id)
                 else:
-                    _LOGGER.debug("Entity ID %s does not belong to platform %s", x, DOMAIN)
+                    _LOGGER.debug("Entity ID %s does not belong to platform %s", entity_id, DOMAIN)
             except AttributeError as err:
-                _LOGGER.debug("Entity ID %s is not valid: %s", x, err)
+                _LOGGER.debug("Entity ID %s is not valid: %s", entity_id, err)
 
         states = []
-        for x in valid_entities:
-            state = hass.states.get(x)
+        for entity_id in valid_entities:
+            # check entity permissions for the current user
+            if _context.user_id:
+                user = await hass.auth.async_get_user(_context.user_id)
+                if user is None:
+                    raise UnknownUser(context = _context, entity_id = entity_id, permission = POLICY_CONTROL)
+                if not user.permissions.check_entity(entity_id, POLICY_CONTROL):
+                    raise Unauthorized(context =_context, entity_id = entity_id, permission = POLICY_CONTROL)
+
+            state = hass.states.get(entity_id)
             states.append(state)
 
         if DEBUG: _LOGGER.debug("valid_states: %s", states)
@@ -167,7 +175,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
 
     async def _change_password(call: ServiceCall, _random: bool = False):
         """Send custom or randomly generated password to a coordinator."""
-        states = await _valid_entity_states(call.data.get(CONF_TARGET))
+        states = await _valid_entity_states(call.data.get(CONF_TARGET), call.context)
 
         if _random:
             method = call.data.get(CONF_METHOD)
@@ -268,38 +276,17 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
 
     async def custom_password_service(call: ServiceCall):
         """Set a custom password."""
-        if call.context.user_id:
-            user = await hass.auth.async_get_user(call.context.user_id)
-            if user is None:
-                raise UnknownUser(context=call.context, permission=POLICY_CONTROL)
-            if not user.is_admin:
-                raise Unauthorized()
-
         await _change_password(call, False)
 
 
     async def random_password_service(call: ServiceCall):
         """Set a randomized password."""
-        if call.context.user_id:
-            user = await hass.auth.async_get_user(call.context.user_id)
-            if user is None:
-                raise UnknownUser(context=call.context, permission=POLICY_CONTROL)
-            if not user.is_admin:
-                raise Unauthorized()
-
         await _change_password(call, True)
 
 
     async def enable_wlan_service(call: ServiceCall):
         """Enable or disable an SSID."""
-        if call.context.user_id:
-            user = await hass.auth.async_get_user(call.context.user_id)
-            if user is None:
-                raise UnknownUser(context=call.context, permission=POLICY_CONTROL)
-            if not user.is_admin:
-                raise Unauthorized()
-
-        states = await _valid_entity_states(call.data.get(CONF_TARGET))
+        states = await _valid_entity_states(call.data.get(CONF_TARGET), call.context)
 
         enabled = call.data.get(CONF_ENABLED)
 
@@ -346,21 +333,21 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                 await coordinator.set_wlanconf(y[CONF_SSID], payload)
 
 
-    hass.services.async_register(
+    hass.helpers.service.async_register_admin_service(
         DOMAIN,
         SERVICE_CUSTOM_PASSWORD,
         custom_password_service,
         schema=SERVICE_CUSTOM_PASSWORD_SCHEMA
     )
 
-    hass.services.async_register(
+    hass.helpers.service.async_register_admin_service(
         DOMAIN,
         SERVICE_RANDOM_PASSWORD,
         random_password_service,
         schema=SERVICE_RANDOM_PASSWORD_SCHEMA
     )
 
-    hass.services.async_register(
+    hass.helpers.service.async_register_admin_service(
         DOMAIN,
         SERVICE_ENABLE_WLAN,
         enable_wlan_service,
