@@ -9,7 +9,6 @@ from homeassistant.auth.permissions.const import POLICY_CONTROL
 from homeassistant.const import (
     CONF_ENABLED,
     CONF_ENTITY_ID,
-    Platform,
     CONF_METHOD,
     CONF_NAME,
     CONF_PASSWORD,
@@ -136,9 +135,8 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             raise IntegrationError(f"SSID {_ssid} does not exist on coordinator {coordinators[_index].name}: {err}")
 
 
-    def _valid_entities(call: ServiceCall) -> List[str]:
-        """Return a list of entity IDs belonging to the platform."""
-        target = call.data.get(CONF_TARGET)
+    async def _valid_entity_states(target: str | List[str]) -> List[str]:
+        """Return a list of states filtered by entity IDs belonging to the platform."""
         try:
             entities = target[CONF_ENTITY_ID]
         except:
@@ -158,13 +156,18 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             except AttributeError as err:
                 _LOGGER.debug("Entity ID %s is not valid: %s", x, err)
 
-        return valid_entities
+        states = []
+        for x in valid_entities:
+            state = hass.states.get(x)
+            states.append(state)
+
+        if DEBUG: _LOGGER.debug("valid_states: %s", states)
+        return states
 
 
-    async def change_password(call: ServiceCall, _random: bool = False):
+    async def _change_password(call: ServiceCall, _random: bool = False):
         """Send custom or randomly generated password to a coordinator."""
-        entities = _valid_entities(call)
-        states = hass.states.async_all(Platform.IMAGE)
+        states = await _valid_entity_states(call.data.get(CONF_TARGET))
 
         if _random:
             method = call.data.get(CONF_METHOD)
@@ -186,71 +189,69 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
 
         requests = []
         for k in states:
-            if k.entity_id in entities:
+            idcoord = _coordinator_index(k.attributes.get(CONF_COORDINATOR))
+            coordinator = coordinators[idcoord]
+            ssid = k.attributes.get(CONF_SSID)
 
-                idcoord = _coordinator_index(k.attributes.get(CONF_COORDINATOR))
-                coordinator = coordinators[idcoord]
-                ssid = k.attributes.get(CONF_SSID)
+            if _random:
+                password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
 
-                if _random:
-                    password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
+            ppsk = bool(k.attributes.get(CONF_PPSK))
+            if ppsk:
+                keys = coordinator.wlanconf[_ssid_index(idcoord, ssid)][UNIFI_PRESHARED_KEYS]
+                network_id = k.attributes.get(UNIFI_NETWORKCONF_ID)
+                idkey = [x[UNIFI_NETWORKCONF_ID] for x in keys].index(network_id)
 
-                ppsk = bool(k.attributes.get(CONF_PPSK))
-                if ppsk:
-                    keys = coordinator.wlanconf[_ssid_index(idcoord, ssid)][UNIFI_PRESHARED_KEYS]
-                    network_id = k.attributes.get(UNIFI_NETWORKCONF_ID)
-                    idkey = [x[UNIFI_NETWORKCONF_ID] for x in keys].index(network_id)
-  
-                    keys[idkey] = {
-                        UNIFI_NETWORKCONF_ID: network_id,
-                        CONF_PASSWORD: password
-                    }
+                keys[idkey] = {
+                    UNIFI_NETWORKCONF_ID: network_id,
+                    CONF_PASSWORD: password
+                }
 
+            try:
+                idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes.get(CONF_COORDINATOR))
+                if DEBUG: _LOGGER.debug("found coordinator")
                 try:
-                    idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes.get(CONF_COORDINATOR))
-                    if DEBUG: _LOGGER.debug("found coordinator")
-                    try:
-                        idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes.get(CONF_SSID))
-                        if DEBUG: _LOGGER.debug("found ssid")
-                        if ppsk:
-                            requests[idrequestcoord][CONF_DATA][idrequestssid][UNIFI_PRESHARED_KEYS] = keys                            
-                        else:
-                            # this condition should not be possible unless somehow two or more entities
-                            # with the same coordinator and ssid and no private preshared keys
-                            # are created and selected
-                            requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_PASSWORD] = password
-                    except ValueError:
-                        if DEBUG: _LOGGER.debug("new ssid entry")
-                        if ppsk:
-                            entry = {
-                                CONF_SSID: k.attributes.get(CONF_SSID),
-                                UNIFI_PRESHARED_KEYS: keys
-                            }
-                        else:
-                            entry = {
-                                CONF_SSID: k.attributes.get(CONF_SSID),
-                                CONF_PASSWORD: password
-                            }
-                        requests[idrequestcoord][CONF_DATA].append(entry)
+                    idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes.get(CONF_SSID))
+                    if DEBUG: _LOGGER.debug("found ssid")
+                    if ppsk:
+                        requests[idrequestcoord][CONF_DATA][idrequestssid][UNIFI_PRESHARED_KEYS] = keys                            
+                    else:
+                        # this condition should not be possible unless somehow two or more entities
+                        # with the same coordinator and ssid and no private preshared keys
+                        # are created and selected
+                        requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_PASSWORD] = password
                 except ValueError:
-                    if DEBUG: _LOGGER.debug("new coordinator entry")
+                    if DEBUG: _LOGGER.debug("new ssid entry")
                     if ppsk:
                         entry = {
-                            CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
-                            CONF_DATA: [{
-                                CONF_SSID: ssid,
-                                UNIFI_PRESHARED_KEYS: keys
-                            }]
+                            CONF_SSID: ssid,
+                            UNIFI_PRESHARED_KEYS: keys
                         }
                     else:
                         entry = {
-                            CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
-                            CONF_DATA: [{
-                                CONF_SSID: ssid,
-                                CONF_PASSWORD: password
-                            }]
+                            CONF_SSID: ssid,
+                            CONF_PASSWORD: password
                         }
-                    requests.append(entry)
+                    requests[idrequestcoord][CONF_DATA].append(entry)
+            except ValueError:
+                if DEBUG: _LOGGER.debug("new coordinator entry")
+                if ppsk:
+                    entry = {
+                        CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
+                        CONF_DATA: [{
+                            CONF_SSID: ssid,
+                            UNIFI_PRESHARED_KEYS: keys
+                        }]
+                    }
+                else:
+                    entry = {
+                        CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
+                        CONF_DATA: [{
+                            CONF_SSID: ssid,
+                            CONF_PASSWORD: password
+                        }]
+                    }
+                requests.append(entry)
 
         if DEBUG: _LOGGER.debug("requests: %s", requests)
         for x in requests:
@@ -274,7 +275,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             if not user.is_admin:
                 raise Unauthorized()
 
-        await change_password(call, False)
+        await _change_password(call, False)
 
 
     async def random_password_service(call: ServiceCall):
@@ -286,7 +287,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             if not user.is_admin:
                 raise Unauthorized()
 
-        await change_password(call, True)
+        await _change_password(call, True)
 
 
     async def enable_wlan_service(call: ServiceCall):
@@ -298,44 +299,41 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             if not user.is_admin:
                 raise Unauthorized()
 
-        entities = _valid_entities(call)
-        states = hass.states.async_all(Platform.IMAGE)
+        states = await _valid_entity_states(call.data.get(CONF_TARGET))
 
         enabled = call.data.get(CONF_ENABLED)
 
         requests = []
         for k in states:
-            if k.entity_id in entities:
+            idcoord = _coordinator_index(k.attributes.get(CONF_COORDINATOR))
+            coordinator = coordinators[idcoord]
+            ssid = k.attributes.get(CONF_SSID)
 
-                idcoord = _coordinator_index(k.attributes.get(CONF_COORDINATOR))
-                coordinator = coordinators[idcoord]
-                ssid = k.attributes.get(CONF_SSID)
-
+            try:
+                idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes.get(CONF_COORDINATOR))
+                if DEBUG: _LOGGER.debug("found coordinator")
                 try:
-                    idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes.get(CONF_COORDINATOR))
-                    if DEBUG: _LOGGER.debug("found coordinator")
-                    try:
-                        idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes.get(CONF_SSID))
-                        if DEBUG: _LOGGER.debug("found ssid")
-                        # DO NOTHING
-                        # requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_ENABLED] = enabled
-                    except ValueError:
-                        if DEBUG: _LOGGER.debug("new ssid entry")
-                        entry = {
-                            CONF_SSID: k.attributes.get(CONF_SSID),
-                            CONF_ENABLED: enabled
-                        }
-                        requests[idrequestcoord][CONF_DATA].append(entry)
+                    idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes.get(CONF_SSID))
+                    if DEBUG: _LOGGER.debug("found ssid")
+                    # DO NOTHING
+                    # requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_ENABLED] = enabled
                 except ValueError:
-                    if DEBUG: _LOGGER.debug("new coordinator entry")
+                    if DEBUG: _LOGGER.debug("new ssid entry")
                     entry = {
-                        CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
-                        CONF_DATA: [{
-                            CONF_SSID: ssid,
-                            CONF_ENABLED: enabled
-                        }]
+                        CONF_SSID: ssid,
+                        CONF_ENABLED: enabled
                     }
-                    requests.append(entry)
+                    requests[idrequestcoord][CONF_DATA].append(entry)
+            except ValueError:
+                if DEBUG: _LOGGER.debug("new coordinator entry")
+                entry = {
+                    CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
+                    CONF_DATA: [{
+                        CONF_SSID: ssid,
+                        CONF_ENABLED: enabled
+                    }]
+                }
+                requests.append(entry)
 
         if DEBUG: _LOGGER.debug("requests: %s", requests)
         for x in requests:
