@@ -17,7 +17,7 @@ from .const import (
     UNIFI_NETWORKCONF_ID,
     UNIFI_PRESHARED_KEYS
 )
-from .unifi import UnifiWifiCoordinator, UnifiWifiImage
+from .coordinator import UnifiWifiCoordinator, UnifiWifiImage
 
 _LOGGER = logging.getLogger(__name__)
 

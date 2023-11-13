@@ -42,7 +42,7 @@ from .const import (
     UNIFI_PASSPHRASE,
     UNIFI_PRESHARED_KEYS
 )
-from .unifi import UnifiWifiCoordinator
+from .coordinator import UnifiWifiCoordinator
 from . import password as pw
 
 DEBUG = False
