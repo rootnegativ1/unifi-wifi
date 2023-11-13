@@ -29,7 +29,7 @@ from .const import (
     CONF_UNIFI_OS
 )
 from .services import register_services
-from .unifi import UnifiWifiCoordinator
+from .coordinator import UnifiWifiCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 

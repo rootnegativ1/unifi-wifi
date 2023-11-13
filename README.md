@@ -145,6 +145,9 @@ unifi_wifi:
       enable: false
   ```
 
+  > [!WARNING]  
+  > *Disabling a PPSK network will disable its SSID which will disable all other associated PPSK networks; the same applies when enabling.*
+
 [^1]: https://my.home-assistant.io/create-link/
 [^2]: https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp
 [^3]: https://regexr.com/7c1b0
