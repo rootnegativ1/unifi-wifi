@@ -56,7 +56,6 @@ unifi_wifi:
 
 - **scan_interval** <sup><sub>string</sub></sup> (optional, default: 600) &nbsp; How often, in seconds, Home Assistant should poll the controller.
 
-  > [!NOTE]  
   > *If you change a password through the controller UI multiple times before ```scan_interval``` triggers an update, only the last change will be detected.*
 
 - **unifi_os** <sup><sub>boolean</sub></sup> (optional, default: true) &nbsp; The *truthiness* of this variable is used to determine API url paths. Set to true (or omit) if your controller is running on UniFi OS; otherwise set to false. Only use this if you're running controller software separately (i.e. Docker, Raspberry Pi, etc).
@@ -69,7 +68,6 @@ unifi_wifi:
 
 - **monitored_ssids** <sup><sub>list</sub></sup> (optional) &nbsp; Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update.
   
-  > [!NOTE]  
   > *Currently, when adding a PPSK-enabled SSID, images for each PPSK-connected VLAN will be created. The ability to specify which VLAN PPSK(s) to watch is not yet supported.*
 
 ## Services
@@ -93,7 +91,7 @@ unifi_wifi:
       password: thisISaTesT
   ```
   
-  > [!NOTE]  
+  > [!NOTE]
   > *If you try setting private preshared keys on the same SSID to the same password, only the first VLAN (alphabetically) will have its password changed.*
 
 ### ```unifi_wifi.random_password```
@@ -123,7 +121,7 @@ unifi_wifi:
       method: word
   ```
 
-  > [!NOTE]  
+  > [!NOTE]
   > *Randomizing multiple private preshared keys on the same SSID will result in multiple random passwords generated. Which is the way it should be anyways ...*
 
 ### ```unifi_wifi.enable_wlan```
@@ -145,7 +143,7 @@ unifi_wifi:
       enable: false
   ```
 
-  > [!WARNING]  
+  > [!WARNING]
   > *Disabling a PPSK network will disable its SSID which will disable all other associated PPSK networks; the same applies when enabling.*
 
 [^1]: https://my.home-assistant.io/create-link/
