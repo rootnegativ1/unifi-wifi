@@ -16,7 +16,7 @@ from homeassistant.const import (
     CONF_TARGET
 )
 from homeassistant.core import HomeAssistant, ServiceCall, Context
-from homeassistant.exceptions import IntegrationError, Unauthorized
+from homeassistant.exceptions import ServiceValidationError, Unauthorized
 from homeassistant.helpers import config_validation as cv, entity_registry
 from homeassistant.helpers import service
 from homeassistant.helpers.typing import ConfigType
@@ -58,7 +58,7 @@ def _is_ascii(obj: ConfigType):
     #    https://docs.python.org/3/library/stdtypes.html#str.isascii
     s = obj[CONF_PASSWORD]
     if not s.isascii():
-        raise ValueError("Password may only contain ASCII characters.")
+        raise ServiceValidationError("Password may only contain ASCII characters.")
     return obj
 
 def _check_word_lengths(obj: ConfigType):
@@ -122,7 +122,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             #return [x[CONF_NAME] for x in coordinators].index(_coordinator)
             return [x.name for x in coordinators].index(_coordinator)
         except ValueError as err:
-            raise IntegrationError(f"Coordinator {_coordinator} is not configured in YAML: {err}")
+            raise ServiceValidationError(f"Coordinator {_coordinator} is not configured in YAML: {err}")
 
 
     def _ssid_index(_index: int, _ssid: str):
@@ -132,7 +132,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         try:
             return [x[UNIFI_NAME] for x in coordinators[_index].wlanconf].index(_ssid)
         except ValueError as err:
-            raise IntegrationError(f"SSID {_ssid} does not exist on coordinator {coordinators[_index].name}: {err}")
+            raise ServiceValidationError(f"SSID {_ssid} does not exist on coordinator {coordinators[_index].name}: {err}")
 
 
     async def _valid_entity_states(_target: str | List[str], _context: Context) -> List[str]:
