@@ -11,11 +11,8 @@
 
 from __future__ import annotations
 
-# import logging, mimetypes, os, collections, aiohttp, async_timeout, qrcode, io
-# are mimetypes and os necessary?
-import logging, collections, aiohttp, async_timeout, qrcode, io
+import logging, collections, aiohttp, asyncio, qrcode, io
 
-from datetime import timedelta
 from homeassistant.components.image import ImageEntity
 from homeassistant.const import (
     CONF_ENABLED,
@@ -31,7 +28,7 @@ from homeassistant.const import (
     STATE_UNKNOWN
 )
 from homeassistant.core import callback, HomeAssistant
-from homeassistant.exceptions import PlatformNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed, PlatformNotReady, IntegrationError
 from homeassistant.helpers.httpx_client import get_async_client
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import ConfigType
@@ -69,6 +66,14 @@ DEBUG = False
 _LOGGER = logging.getLogger(__name__)
 
 
+class ApiAuthError(IntegrationError):
+    """Raised when a status code of 401 HTTPUnauthorized is received."""
+
+
+class ApiError(IntegrationError):
+    """Raised when a status code of 500 or greater is received."""
+
+
 class UnifiWifiCoordinator(DataUpdateCoordinator):
     """Representation of a Unifi Wifi coordinator"""
 
@@ -79,7 +84,6 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             # Name of the data. For logging purposes.
             name=f"{conf[CONF_NAME]} UniFi coordinator",
             # Polling interval. Will only be polled if there are subscribers.
-            # update_interval=timedelta(seconds=30),
             update_interval=conf[CONF_SCAN_INTERVAL],
         )
 
@@ -107,13 +111,14 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         try:
             # Note: asyncio.TimeoutError and aiohttp.ClientError are already
             # handled by the data update coordinator.
-            async with async_timeout.timeout(10):
+            async with asyncio.timeout(10):
                 return await self._update_info()
-        except ConnectionError as err:
-            # # Raising ConfigEntryAuthFailed will cancel future updates
-            # # and start a config flow with SOURCE_REAUTH (async_step_reauth)
-            # raise ConfigEntryAuthFailed from err
-            raise PlatformNotReady(f"Error communicating with API: {err}")
+        except ApiAuthError as err:
+            # Raising ConfigEntryAuthFailed will cancel future updates
+            # and start a config flow with SOURCE_REAUTH (async_step_reauth)
+            raise ConfigEntryAuthFailed from err
+        except ApiError as err:
+            raise UpdateFailed(f"Error communicating with API: {err}") from err
 
     async def _request(self, session: aiohttp.ClientSession, method: str, path: str, **kwargs) -> aiohttp.ClientResponse:
         """Make a request."""
@@ -127,24 +132,31 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         resp = await session.request(method, fullpath, **kwargs, headers=headers)
 
         if DEBUG:
-            _LOGGER.debug("_request path %s", fullpath)
-            _LOGGER.debug("_request kwargs %s", kwargs)
-            _LOGGER.debug("_request headers %s", headers)
+            _LOGGER.debug("_request path %s: (status %s)", fullpath, resp.status)
+            _LOGGER.debug("_request kwargs: %s", kwargs)
+            _LOGGER.debug("_request headers: %s", headers)
             _LOGGER.debug("%s response: %s", path, await resp.json())
             _LOGGER.debug("%s response cookies: %s", path, resp.cookies)
             _LOGGER.debug("%s response headers: %s", path, resp.headers)
+
+        status = resp.status
+        if status == 401:
+            raise ApiAuthError(f"{await resp.json()}")
+        if status >= 500:
+            raise ApiError(f"{await resp.json()}")
+
+        if not resp.ok: # not a 2xx status code
+            resp.raise_for_status()
 
         return resp
 
     async def _login(self, session: aiohttp.ClientSession):
         """log into a UniFi controller."""
         payload = {'username': self._user, 'password': self._password}
-        headers = {'Content-Type': 'application/json'}
+        headers = {'Content-Type': 'application/json', 'accept': 'application/json'}
         kwargs = {'json': payload, 'headers': headers}
         path = f"{self._login_prefix}/login"
-        resp = await self._request(session, 'post', path, **kwargs)
-
-        return resp
+        return await self._request(session, 'post', path, **kwargs)
 
     async def _logout(self, session: aiohttp.ClientSession, csrf_token: str) -> None:
         """log out of a UniFi controller."""
