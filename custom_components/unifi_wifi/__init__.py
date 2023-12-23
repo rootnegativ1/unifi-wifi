@@ -10,6 +10,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_PORT,
     CONF_SCAN_INTERVAL,
+    CONF_TIMEOUT,
     CONF_USERNAME,
     CONF_VERIFY_SSL
 )
@@ -52,6 +53,7 @@ _SITE_SCHEMA = vol.Schema({
     vol.Optional(CONF_SITE, default='default'): cv.string,
     vol.Optional(CONF_PORT, default=443): cv.port,
     vol.Optional(CONF_SCAN_INTERVAL, default=600): cv.time_period,
+    vol.Optional(CONF_TIMEOUT, default=10): cv.positive_int,
     vol.Optional(CONF_UNIFI_OS, default=True): cv.boolean,
     vol.Optional(CONF_VERIFY_SSL, default=False): cv.boolean,
     vol.Optional(CONF_FORCE_PROVISION, default=False): cv.boolean,

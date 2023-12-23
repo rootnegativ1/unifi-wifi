@@ -30,8 +30,10 @@ unifi_wifi:
     password: NotARealPassword
     site: default
     scan_interval: 300
+    timeout: 20
     unifi_os: true
     verify_ssl: false
+    force_provision: false
     managed_aps:
       - name: udm
         mac: !secret unifi_udm_mac
@@ -56,7 +58,10 @@ unifi_wifi:
 
 - **scan_interval** <sup><sub>string</sub></sup> (optional, default: 600) &nbsp; How often, in seconds, Home Assistant should poll the controller.
 
+  > [!NOTE] 
   > *If you change a password through the controller UI multiple times before ```scan_interval``` triggers an update, only the last change will be detected.*
+
+- **timeout** <sup><sub>string</sub></sup> (optional, default: 10) &nbsp; How many seconds an update request to the controller will wait before timing out.
 
 - **unifi_os** <sup><sub>boolean</sub></sup> (optional, default: true) &nbsp; The *truthiness* of this variable is used to determine API url paths. Set to true (or omit) if your controller is running on UniFi OS; otherwise set to false. Only use this if you're running controller software separately (i.e. Docker, Raspberry Pi, etc).
 
@@ -143,7 +148,7 @@ unifi_wifi:
       enable: false
   ```
 
-  > [!WARNING]
+  > [!IMPORTANT]
   > *Disabling a PPSK network will disable its SSID which will disable all other associated PPSK networks; the same applies when enabling.*
 
 [^1]: https://my.home-assistant.io/create-link/

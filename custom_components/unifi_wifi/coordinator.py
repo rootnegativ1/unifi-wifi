@@ -22,6 +22,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_PORT,
     CONF_SCAN_INTERVAL,
+    CONF_TIMEOUT,
     CONF_VERIFY_SSL,
     CONF_USERNAME,
     STATE_UNAVAILABLE,
@@ -99,6 +100,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         self._password = conf[CONF_PASSWORD]
         self._force = conf[CONF_FORCE_PROVISION]
         self._aps = conf[CONF_MANAGED_APS]
+        self._timeout = conf[CONF_TIMEOUT]
         self._unifi_os = conf[CONF_UNIFI_OS]
         if self._unifi_os:
             self._login_prefix = '/api/auth'
@@ -111,7 +113,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         try:
             # Note: asyncio.TimeoutError and aiohttp.ClientError are already
             # handled by the data update coordinator.
-            async with asyncio.timeout(10):
+            async with asyncio.timeout(self._timeout):
                 return await self._update_info()
         except ApiAuthError as err:
             # Raising ConfigEntryAuthFailed will cancel future updates
