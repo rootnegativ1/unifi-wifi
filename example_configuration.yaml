@@ -2,6 +2,7 @@ unifi_wifi:
   - name: myhouse
     site: default
     scan_interval: 300
+    timeout: 20
     host: !secret unifi_host
     port: 443
     username: !secret unifi_username
