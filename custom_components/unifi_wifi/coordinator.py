@@ -29,7 +29,7 @@ from homeassistant.const import (
     STATE_UNKNOWN
 )
 from homeassistant.core import callback, HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed, PlatformNotReady, IntegrationError
+from homeassistant.exceptions import ConfigEntryAuthFailed, IntegrationError
 from homeassistant.helpers.httpx_client import get_async_client
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import ConfigType
@@ -160,7 +160,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         path = f"{self._login_prefix}/login"
         return await self._request(session, 'post', path, **kwargs)
 
-    async def _logout(self, session: aiohttp.ClientSession, csrf_token: str) -> None:
+    async def _logout(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
         """log out of a UniFi controller."""
         headers = {'Content-Length': '0'}
         if self._unifi_os:
@@ -169,9 +169,9 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         path = f"{self._login_prefix}/logout"
         resp = await self._request(session, 'post', path, **kwargs)
 
-    async def _force_provision(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
-        if not self._force: return True
+        return True
 
+    async def _force_provision(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
         headers = {'Content-Type': 'application/json'}
         if self._unifi_os:
             headers[UNIFI_CSRF_TOKEN] = csrf_token
@@ -185,8 +185,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
             json = await resp.json()
 
-            data = json['data']
-            for device in data:
+            conf = json['data']
+            for device in conf:
                 if device['type'] == 'uap' or (device['type'] == 'udm' and device['model'] == 'UDM'):
                     aps.append(device)
         else:
@@ -197,9 +197,6 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             payload = {'cmd': 'force-provision', 'mac': ap[CONF_MAC]}
             kwargs['json'] = payload
             resp = await self._request(session, 'post', path, **kwargs)
-
-            # if DEBUG:
-                # _LOGGER.debug("_force_provision response for %s: %s", ap[CONF_MAC], await resp.json())
 
         return True
 
@@ -212,8 +209,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         path = f"{self._api_prefix}/api/s/{self.site}/rest/networkconf"
         resp = await self._request(session, 'get', path, **kwargs)
 
-        json = await resp.json()
-        self.networkconf = json['data']
+        conf = await resp.json()
+        self.networkconf = conf['data']
 
         return True
 
@@ -226,8 +223,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         path = f"{self._api_prefix}/api/s/{self.site}/stat/sysinfo"
         resp = await self._request(session, 'get', path, **kwargs)
 
-        json = await resp.json()
-        self.sysinfo = json['data']
+        conf = await resp.json()
+        self.sysinfo = conf['data']
 
         return True
 
@@ -240,8 +237,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf"
         resp = await self._request(session, 'get', path, **kwargs)
 
-        json = await resp.json()
-        self.wlanconf = json['data']
+        conf = await resp.json()
+        self.wlanconf = conf['data']
 
         return True
 
@@ -270,7 +267,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
             return await session.close()
 
-    async def set_wlanconf(self, ssid: str, payload: str) -> bool:
+    async def set_wlanconf(self, ssid: str, payload: str, force: bool = False) -> bool:
         async with aiohttp.ClientSession(
             connector=aiohttp.TCPConnector(ssl=False),
             cookie_jar=aiohttp.CookieJar(unsafe=True)
@@ -294,10 +291,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
             await self.async_request_refresh()
 
-            # if DEBUG:
-                # _LOGGER.debug("set_wlanconf response: %s", await resp.json())
-
-            await self._force_provision(session, csrf_token)
+            if self._force or force:
+                await self._force_provision(session, csrf_token)
 
             await self._logout(session, csrf_token)
 
@@ -446,23 +441,23 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         img.save(x)
         self._code_bytes = x.getvalue()
 
-    def _ssid_index(self, ssid: str):
-        """Find the array index of a specific ssid."""
+    def _ssid_index(self, ssid: str) -> int:
+        """Find the array index of a specific ssid in wlanconf."""
         try:
             return [x[UNIFI_NAME] for x in self.coordinator.wlanconf].index(ssid)
         except ValueError as err:
-            raise PlatformNotReady(f"SSID {ssid} not found on coordinator {self.coordinator.name}: {err}")
+            raise IntegrationError(f"SSID {ssid} not found on coordinator {self.coordinator.name}: {err}")
 
-    def _network_index(self, network_id: str):
+    def _network_index(self, network_id: str) -> int:
         """Find the array index of a specific network in wlanconf."""
         try:
             idssid = self._ssid_index(self._attributes[CONF_SSID])
             return [x[UNIFI_NETWORKCONF_ID] for x in self.coordinator.wlanconf[idssid][UNIFI_PRESHARED_KEYS]].index(network_id)
         except ValueError as err:
-            raise PlatformNotReady(f"Network {network_id} not found on coordinator {self.coordinator.name}: {err}")
+            raise IntegrationError(f"Network {network_id} not found on coordinator {self.coordinator.name}: {err}")
 
     def _update_data(self) -> None:
-        """SOMETHING SOMETHING SOMETHING."""
+        """Update state and attributes when changes are detected."""
         idssid = self._ssid_index(self._attributes[CONF_SSID])
         enabled_state = self.coordinator.wlanconf[idssid][CONF_ENABLED]
         if self._attributes[CONF_PPSK]:
