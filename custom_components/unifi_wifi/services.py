@@ -271,7 +271,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                 except:
                     payload = {UNIFI_PASSPHRASE: y[CONF_PASSWORD]}
                 if DEBUG: _LOGGER.debug("ssid %s with payload %s", y[CONF_SSID], payload)
-                await coordinator.set_wlanconf(y[CONF_SSID], payload)
+                await coordinator.set_wlanconf(y[CONF_SSID], payload, False)
 
 
     async def custom_password_service(call: ServiceCall):
@@ -330,7 +330,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                 # boolean python values (uppercase) need to be json serialized (lowercase)
                 payload = json.dumps({CONF_ENABLED: y[CONF_ENABLED]})
                 if DEBUG: _LOGGER.debug("ssid %s with payload %s", y[CONF_SSID], payload)
-                await coordinator.set_wlanconf(y[CONF_SSID], payload)
+                await coordinator.set_wlanconf(y[CONF_SSID], payload, False)
 
 
     hass.helpers.service.async_register_admin_service(
