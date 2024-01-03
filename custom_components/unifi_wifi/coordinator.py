@@ -62,7 +62,7 @@ from .const import (
     UNIFI_CSRF_TOKEN
 )
 
-DEBUG = False
+EXTRA_DEBUG = False
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -133,8 +133,9 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         fullpath = f"https://{self._host}:{self._port}{path}"
         resp = await session.request(method, fullpath, **kwargs, headers=headers)
 
-        if DEBUG:
-            _LOGGER.debug("_request path %s: (status %s)", fullpath, resp.status)
+        _LOGGER.debug("_request path %s: (status %s)", fullpath, resp.status)
+
+        if EXTRA_DEBUG:
             _LOGGER.debug("_request kwargs: %s", kwargs)
             _LOGGER.debug("_request headers: %s", headers)
             _LOGGER.debug("%s response: %s", path, await resp.json())
