@@ -45,7 +45,7 @@ from .const import (
 from .coordinator import UnifiWifiCoordinator
 from . import password as pw
 
-DEBUG = False
+EXTRA_DEBUG = False
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -145,11 +145,11 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         ent_reg = entity_registry.async_get(hass)
         valid_entities = []
         for entity_id in entities:
-            entry = ent_reg.async_get(entity_id)
+            entity = ent_reg.async_get(entity_id)
             try:
-                entry_dict = entry.as_partial_dict
-                if DEBUG: _LOGGER.debug("registry entry: %s", entry_dict)
-                if entry_dict[CONF_PLATFORM] == DOMAIN:
+                entity_dict = entry.as_partial_dict
+                if EXTRA_DEBUG: _LOGGER.debug("registry entry: %s", entity_dict)
+                if entity_dict[CONF_PLATFORM] == DOMAIN:
                     valid_entities.append(entity_id)
                 else:
                     _LOGGER.debug("Entity ID %s does not belong to platform %s", entity_id, DOMAIN)
@@ -169,7 +169,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             state = hass.states.get(entity_id)
             states.append(state)
 
-        if DEBUG: _LOGGER.debug("valid_states: %s", states)
+        if EXTRA_DEBUG: _LOGGER.debug("valid_states: %s", states)
         return states
 
 
@@ -217,10 +217,10 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
 
             try:
                 idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes.get(CONF_COORDINATOR))
-                if DEBUG: _LOGGER.debug("found coordinator")
+                if EXTRA_DEBUG: _LOGGER.debug("found coordinator")
                 try:
                     idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes.get(CONF_SSID))
-                    if DEBUG: _LOGGER.debug("found ssid")
+                    if EXTRA_DEBUG: _LOGGER.debug("found ssid")
                     if ppsk:
                         requests[idrequestcoord][CONF_DATA][idrequestssid][UNIFI_PRESHARED_KEYS] = keys                            
                     else:
@@ -229,7 +229,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                         # are created and selected
                         requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_PASSWORD] = password
                 except ValueError:
-                    if DEBUG: _LOGGER.debug("new ssid entry")
+                    if EXTRA_DEBUG: _LOGGER.debug("new ssid entry")
                     if ppsk:
                         entry = {
                             CONF_SSID: ssid,
@@ -242,7 +242,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                         }
                     requests[idrequestcoord][CONF_DATA].append(entry)
             except ValueError:
-                if DEBUG: _LOGGER.debug("new coordinator entry")
+                if EXTRA_DEBUG: _LOGGER.debug("new coordinator entry")
                 if ppsk:
                     entry = {
                         CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
@@ -261,7 +261,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                     }
                 requests.append(entry)
 
-        if DEBUG: _LOGGER.debug("requests: %s", requests)
+        if EXTRA_DEBUG: _LOGGER.debug("requests: %s", requests)
         for x in requests:
             idcoord = _coordinator_index(x[CONF_COORDINATOR])
             coordinator = coordinators[idcoord]
@@ -270,7 +270,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                     payload = {UNIFI_PRESHARED_KEYS: y[UNIFI_PRESHARED_KEYS]}
                 except:
                     payload = {UNIFI_PASSPHRASE: y[CONF_PASSWORD]}
-                if DEBUG: _LOGGER.debug("ssid %s with payload %s", y[CONF_SSID], payload)
+                if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", y[CONF_SSID], payload)
                 await coordinator.set_wlanconf(y[CONF_SSID], payload, False)
 
 
@@ -298,21 +298,21 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
 
             try:
                 idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes.get(CONF_COORDINATOR))
-                if DEBUG: _LOGGER.debug("found coordinator")
+                if EXTRA_DEBUG: _LOGGER.debug("found coordinator")
                 try:
                     idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes.get(CONF_SSID))
-                    if DEBUG: _LOGGER.debug("found ssid")
+                    if EXTRA_DEBUG: _LOGGER.debug("found ssid")
                     # DO NOTHING
                     # requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_ENABLED] = enabled
                 except ValueError:
-                    if DEBUG: _LOGGER.debug("new ssid entry")
+                    if EXTRA_DEBUG: _LOGGER.debug("new ssid entry")
                     entry = {
                         CONF_SSID: ssid,
                         CONF_ENABLED: enabled
                     }
                     requests[idrequestcoord][CONF_DATA].append(entry)
             except ValueError:
-                if DEBUG: _LOGGER.debug("new coordinator entry")
+                if EXTRA_DEBUG: _LOGGER.debug("new coordinator entry")
                 entry = {
                     CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
                     CONF_DATA: [{
@@ -322,14 +322,14 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                 }
                 requests.append(entry)
 
-        if DEBUG: _LOGGER.debug("requests: %s", requests)
+        if EXTRA_DEBUG: _LOGGER.debug("requests: %s", requests)
         for x in requests:
             idcoord = _coordinator_index(x[CONF_COORDINATOR])
             coordinator = coordinators[idcoord]
             for y in x[CONF_DATA]:
                 # boolean python values (uppercase) need to be json serialized (lowercase)
                 payload = json.dumps({CONF_ENABLED: y[CONF_ENABLED]})
-                if DEBUG: _LOGGER.debug("ssid %s with payload %s", y[CONF_SSID], payload)
+                if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", y[CONF_SSID], payload)
                 await coordinator.set_wlanconf(y[CONF_SSID], payload, False)
 
 

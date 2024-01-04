@@ -42,6 +42,8 @@ from .const import (
 )
 from .coordinator import UnifiWifiCoordinator
 
+EXTRA_DEBUG = False
+
 _LOGGER = logging.getLogger(__name__)
 
 
