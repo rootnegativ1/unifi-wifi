@@ -44,6 +44,7 @@ from .const import (
 
 EXTRA_DEBUG = False
 
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -113,7 +114,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         fullpath = f"https://{self._host}:{self._port}{path}"
         resp = await session.request(method, fullpath, **kwargs, headers=headers)
 
-        _LOGGER.debug("_request path %s: (status %s)", fullpath, resp.status)
+        _LOGGER.debug("_request method %s on path %s (status %s)", method, fullpath, resp.status)
 
         if EXTRA_DEBUG:
             _LOGGER.debug("_request kwargs: %s", kwargs)
@@ -233,6 +234,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             # https://docs.aiohttp.org/en/stable/client_advanced.html#cookie-safety
             cookie_jar=aiohttp.CookieJar(unsafe=True)
         ) as session:
+            _LOGGER.debug("_update_info Updating info for %s", self.name)
+
             resp = await self._login(session)
             csrf_token = ''
             if self._unifi_os:
@@ -253,6 +256,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             connector=aiohttp.TCPConnector(ssl=False),
             cookie_jar=aiohttp.CookieJar(unsafe=True)
         ) as session:
+            _LOGGER.debug("set_wlanconf Setting new conf value for %s for %s", ssid, self.name)
+
             resp = await self._login(session)
 
             csrf_token = ''
@@ -270,11 +275,11 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf/{idno}"
             resp = await self._request(session, 'put', path, **kwargs)
 
-            await self.async_request_refresh()
-
             if self._force or force:
                 await self._force_provision(session, csrf_token)
 
             await self._logout(session, csrf_token)
 
-            return await session.close()
+            await session.close()
+
+            return await self.async_request_refresh()

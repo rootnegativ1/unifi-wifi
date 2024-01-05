@@ -112,7 +112,7 @@ unifi_wifi:
 
   Change SSID password on UniFi network to a randomly generated string
   - char --> 24-character alphanumeric string
-  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^4]. This wordfile is located in ```custom_components/unfi_wifi```
+  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^2]. This wordfile is located in ```custom_components/unfi_wifi```
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
 
   ```yaml
@@ -135,7 +135,7 @@ unifi_wifi:
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | enabled | no | enabled = true, disabled = false |
 
-  Enable (or disable) a specific SSID on a UniFi network controller
+  Enable (or disable) a specific SSID on a UniFi network controller. *For this change to take effect properly, all (managed) access points will be re-provisioned regardless of the value of ```force_provision```.*
 
   ```yaml
     # example
@@ -152,6 +152,4 @@ unifi_wifi:
   > *Disabling a PPSK network will disable its SSID which will disable all other associated PPSK networks; the same applies when enabling.*
 
 [^1]: https://my.home-assistant.io/create-link/
-[^2]: https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp
-[^3]: https://regexr.com/7c1b0
-[^4]: https://www.eff.org/dice
+[^2]: https://www.eff.org/dice
