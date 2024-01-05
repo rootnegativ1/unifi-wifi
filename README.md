@@ -10,7 +10,7 @@ Change SSID passwords and private preshared keys (PPSKs) as well as generate QR 
 Download the contents of ```custom_components``` to your ```/config/custom_components``` directory
 
 ## HACS Installation
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rootnegativ1&repository=unifi-wifi&category=integration) [^1]
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rootnegativ1&repository=unifi-wifi&category=integration)
 1. Go to any of the sections (integrations, frontend, automation)
 2. Click on the 3 dots in the top right corner
 3. Select "Custom repositories"
@@ -112,7 +112,7 @@ unifi_wifi:
 
   Change SSID password on UniFi network to a randomly generated string
   - char --> 24-character alphanumeric string
-  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^4]. This wordfile is located in ```custom_components/unfi_wifi```
+  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^1]. This wordfile is located in ```custom_components/unfi_wifi```
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
 
   ```yaml
@@ -135,7 +135,7 @@ unifi_wifi:
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | enabled | no | enabled = true, disabled = false |
 
-  Enable (or disable) a specific SSID on a UniFi network controller
+  Enable (or disable) a specific SSID on a UniFi network controller. *For this setting to take effect properly, all (managed) access points will be automatically reprovisioned regardless of the value of ```force_provision```.*
 
   ```yaml
     # example
@@ -151,7 +151,13 @@ unifi_wifi:
   > [!IMPORTANT]
   > *Disabling a PPSK network will disable its SSID which will disable all other associated PPSK networks; the same applies when enabling.*
 
-[^1]: https://my.home-assistant.io/create-link/
-[^2]: https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp
-[^3]: https://regexr.com/7c1b0
-[^4]: https://www.eff.org/dice
+## Debug Logs
+These can be accessed by adding the following to configuration.yaml. Be mindful of the volume of debug messages.
+
+```yaml
+logger:
+  logs:
+    custom_components.unifi_wifi: debug
+```
+
+[^1]: https://www.eff.org/dice

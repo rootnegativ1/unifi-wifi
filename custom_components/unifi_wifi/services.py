@@ -328,9 +328,11 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             coordinator = coordinators[idcoord]
             for y in x[CONF_DATA]:
                 # boolean python values (uppercase) need to be json serialized (lowercase)
-                payload = json.dumps({CONF_ENABLED: y[CONF_ENABLED]})
+                # payload = json.dumps({CONF_ENABLED: y[CONF_ENABLED]})
+                # apparently, the capitalized boolean value is actually REQUIRED ... weird
+                payload ={CONF_ENABLED: y[CONF_ENABLED]}
                 if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", y[CONF_SSID], payload)
-                await coordinator.set_wlanconf(y[CONF_SSID], payload, False)
+                await coordinator.set_wlanconf(y[CONF_SSID], payload, True)
 
 
     hass.helpers.service.async_register_admin_service(
