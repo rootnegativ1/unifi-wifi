@@ -147,7 +147,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         for entity_id in entities:
             entity = ent_reg.async_get(entity_id)
             try:
-                entity_dict = entry.as_partial_dict
+                entity_dict = entity.as_partial_dict
                 if EXTRA_DEBUG: _LOGGER.debug("registry entry: %s", entity_dict)
                 if entity_dict[CONF_PLATFORM] == DOMAIN:
                     valid_entities.append(entity_id)
