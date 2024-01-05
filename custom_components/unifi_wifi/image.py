@@ -44,6 +44,7 @@ from .coordinator import UnifiWifiCoordinator
 
 EXTRA_DEBUG = False
 
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -261,6 +262,8 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attributes[UNIFI_ID] = self.coordinator.wlanconf[idssid][UNIFI_ID]
 
             _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'enabled' if bool(self._attributes[CONF_ENABLED]) else 'disabled')
+
+            self.async_write_ha_state()
 
         if password_change:
             self._attributes[CONF_PASSWORD] = new_password
