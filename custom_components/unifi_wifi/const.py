@@ -20,13 +20,11 @@ CONF_SSID = 'ssid'
 CONF_TIMESTAMP = 'timestamp'
 CONF_UNIFI_OS = 'unifi_os'
 CONF_WORD_COUNT = 'word_count'
-SERVICE_CUSTOM_PASSWORD = 'custom_password'
-SERVICE_RANDOM_PASSWORD = 'random_password'
-SERVICE_ENABLE_WLAN = 'enable_wlan'
+# Some of the below values are duplicates of homeassistant.const values
+# This is done to allow for changes in UniFi API keys
 UNIFI_ID = '_id'
-UNIFI_NAME = 'name'
+UNIFI_NAME = 'name' # duplicate
 UNIFI_NETWORKCONF_ID = 'networkconf_id'
 UNIFI_PASSPHRASE = 'x_passphrase'
-UNIFI_PASSWORD = 'password'
+UNIFI_PASSWORD = 'password' # duplicate
 UNIFI_PRESHARED_KEYS = 'private_preshared_keys'
-UNIFI_CSRF_TOKEN = 'X-CSRF-Token'
