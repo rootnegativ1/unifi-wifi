@@ -38,9 +38,10 @@ from .const import (
     CONF_SITE,
     CONF_UNIFI_OS,
     UNIFI_ID,
-    UNIFI_NAME,
-    UNIFI_CSRF_TOKEN
+    UNIFI_NAME
 )
+
+UNIFI_CSRF_TOKEN = 'X-CSRF-Token'
 
 EXTRA_DEBUG = False
 

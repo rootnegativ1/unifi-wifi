@@ -34,9 +34,6 @@ from .const import (
     CONF_PPSK,
     CONF_SSID,
     CONF_WORD_COUNT,
-    SERVICE_CUSTOM_PASSWORD,
-    SERVICE_RANDOM_PASSWORD,
-    SERVICE_ENABLE_WLAN,
     UNIFI_NAME,
     UNIFI_NETWORKCONF_ID,
     UNIFI_PASSPHRASE,
@@ -44,6 +41,10 @@ from .const import (
 )
 from .coordinator import UnifiWifiCoordinator
 from . import password as pw
+
+SERVICE_CUSTOM_PASSWORD = 'custom_password'
+SERVICE_RANDOM_PASSWORD = 'random_password'
+SERVICE_ENABLE_WLAN = 'enable_wlan'
 
 EXTRA_DEBUG = False
 
