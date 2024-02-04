@@ -50,7 +50,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class ApiAuthError(IntegrationError):
-    """Raised when a status code of 401 HTTPUnauthorized is received."""
+    """Raised when a status code of 401 HTTPUnauthorized or 403 Forbidden is received."""
 
 
 class ApiError(IntegrationError):
@@ -93,10 +93,10 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         try:
-            # Note: asyncio.TimeoutError and aiohttp.ClientError are already
-            # handled by the data update coordinator.
             async with asyncio.timeout(self._timeout):
                 return await self._update_info()
+        # Note: asyncio.TimeoutError and aiohttp.ClientError are already
+        # handled by the data update coordinator.
         except ApiAuthError as err:
             # Raising ConfigEntryAuthFailed will cancel future updates
             # and start a config flow with SOURCE_REAUTH (async_step_reauth)
@@ -125,13 +125,14 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("%s response headers: %s", path, resp.headers)
 
         status = resp.status
-        if status == 401:
+        if status == 401 or status == 403:
             raise ApiAuthError(f"{await resp.json()}")
-        if status >= 500:
+        elif status >= 500:
             raise ApiError(f"{await resp.json()}")
-
-        if not resp.ok: # not a 2xx status code
+        elif not resp.ok: # catch all other non 2xx status codes
             resp.raise_for_status()
+        else:
+            pass
 
         return resp
 
