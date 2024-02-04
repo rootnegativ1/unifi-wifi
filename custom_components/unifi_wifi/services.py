@@ -16,7 +16,7 @@ from homeassistant.const import (
     CONF_TARGET
 )
 from homeassistant.core import HomeAssistant, ServiceCall, Context
-from homeassistant.exceptions import ServiceValidationError, Unauthorized
+from homeassistant.exceptions import InvalidEntityFormatError, ServiceValidationError, Unauthorized
 from homeassistant.helpers import config_validation as cv, entity_registry
 from homeassistant.helpers import service
 from homeassistant.helpers.typing import ConfigType
@@ -154,9 +154,11 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                 if entity_dict[CONF_PLATFORM] == DOMAIN:
                     valid_entities.append(entity_id)
                 else:
-                    _LOGGER.debug("Entity ID %s does not belong to platform %s", entity_id, DOMAIN)
+                    #_LOGGER.debug("Entity ID %s does not belong to platform %s", entity_id, DOMAIN)
+                    raise ServiceValidationError(f"Entity ID {entity_id} does not belong to platform {DOMAIN}")
             except AttributeError as err:
-                _LOGGER.debug("Entity ID %s is not valid: %s", entity_id, err)
+                #_LOGGER.debug("Entity ID %s is not valid: %s", entity_id, err)
+                raise InvalidEntityFormatError(f"Entity ID {entity_id} is not valid: {err}")
 
         states = []
         for entity_id in valid_entities:
