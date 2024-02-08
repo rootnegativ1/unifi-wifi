@@ -1,0 +1,7 @@
+{
+  "services": {
+    "custom_password": "mdi:form-textbox-password",
+    "random_password": "mdi:form-textbox-password",
+    "enable_wlan": "mdi:toggle-switch"
+  }
+}
