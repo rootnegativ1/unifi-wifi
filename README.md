@@ -3,7 +3,6 @@
 [![Github All Releases](https://img.shields.io/github/downloads/rootnegativ1/unifi-wifi/total.svg?&style=for-the-badge)]()
 
 # Unifi Wifi Home Assistant Integration
-
 Change SSID passwords and private preshared keys (PPSKs) as well as generate QR codes for them on UniFi Network controllers. Passwords & PPSKs can be custom or random strings using the included services. QR codes are represented as image entities and generated per network SSID. These images are located in ```/config/www```. If a password is changed through the controller-side web UI, the associated QR code is automatically updated in Home Assistant.
 
 ## Manual Installation
@@ -150,6 +149,20 @@ unifi_wifi:
 
   > [!IMPORTANT]
   > *Disabling a PPSK network will disable its SSID which will disable all other associated PPSK networks; the same applies when enabling.*
+
+## Logging
+Debug logs can be enabled with the following in ```configuration.yaml```
+
+```yaml
+logger:
+  logs:
+    custom_components.unifi_wifi: debug
+```
+
+In addition to the above, there is extra level of debugging in each of ```coordinator.py```, ```image.py```, and ```services.py```. It can be enabled by setting ```EXTRA_DEBUG = True``` in whichever file(s) you want to debug.
+
+> [!WARNING]
+> This will expose usernames and passwords! It is intended ONLY TO VERIFY message content to and from a controller. Only use when needed, and **disable immediately afterwards**.
 
 [^1]: https://my.home-assistant.io/create-link/
 [^2]: https://www.eff.org/dice
