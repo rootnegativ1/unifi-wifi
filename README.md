@@ -57,7 +57,6 @@ unifi_wifi:
 
 - **scan_interval** <sup><sub>string</sub></sup> (optional, default: 600) &nbsp; How often, in seconds, Home Assistant should poll the controller.
 
-  > [!NOTE] 
   > *If you change a password through the controller UI multiple times before ```scan_interval``` triggers an update, only the last change will be detected.*
 
 - **timeout** <sup><sub>string</sub></sup> (optional, default: 10) &nbsp; How many seconds an update request to the controller will wait before timing out.
@@ -72,7 +71,7 @@ unifi_wifi:
 
 - **monitored_ssids** <sup><sub>list</sub></sup> (optional) &nbsp; Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update.
   
-  > *Currently, when adding a PPSK-enabled SSID, images for each PPSK-connected VLAN will be created. The ability to specify which VLAN PPSK(s) to watch is not yet supported.*
+  > *Currently, when adding a PPSK-enabled SSID, images for each PPSK-connected VLAN will be created. The ability to specify which VLAN PPSK(s) to monitor is not yet supported.*
 
 ## Services
 
@@ -80,9 +79,9 @@ unifi_wifi:
   | Service data attribute | Optional | Description |
   |---|---|---|
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
-  | password | no | set a user-provided password |
+  | password | no | user-provided password |
 
-  Change SSID password(s) on UniFi network to a custom string.
+  Change SSID password(s) on UniFi network to a custom string. New passwords must contain only ASCII characters and be between 8 and 63 characters in length.
 
   ```yaml
     # example
