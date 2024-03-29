@@ -16,7 +16,7 @@ from homeassistant.const import (
     CONF_TARGET
 )
 from homeassistant.core import HomeAssistant, ServiceCall, Context
-from homeassistant.exceptions import InvalidEntityFormatError, ServiceValidationError, Unauthorized
+from homeassistant.exceptions import InvalidEntityFormatError, ServiceValidationError, Unauthorized, IntegrationError
 from homeassistant.helpers import config_validation as cv, entity_registry
 from homeassistant.helpers import service
 from homeassistant.helpers.typing import ConfigType
@@ -199,42 +199,49 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         else:
             password = call.data.get(CONF_PASSWORD)
 
+        # create list of wlan configurations to be sent to controllers
         requests = []
-        for k in states:
-            idcoord = _coordinator_index(k.attributes.get(CONF_COORDINATOR))
+        for entity in states:
+            idcoord = _coordinator_index(entity.attributes.get(CONF_COORDINATOR))
             coordinator = coordinators[idcoord]
-            ssid = k.attributes.get(CONF_SSID)
+            ssid = entity.attributes.get(CONF_SSID)
 
             if _random:
                 password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
 
-            ppsk = bool(k.attributes.get(CONF_PPSK))
+            ppsk = bool(entity.attributes.get(CONF_PPSK))
             if ppsk:
                 keys = coordinator.wlanconf[_ssid_index(idcoord, ssid)][UNIFI_PRESHARED_KEYS]
-                network_id = k.attributes.get(UNIFI_NETWORKCONF_ID)
+                network_id = entity.attributes.get(UNIFI_NETWORKCONF_ID)
                 idkey = [x[UNIFI_NETWORKCONF_ID] for x in keys].index(network_id)
 
-                keys[idkey] = {
-                    UNIFI_NETWORKCONF_ID: network_id,
-                    CONF_PASSWORD: password
-                }
-
             try:
-                idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes.get(CONF_COORDINATOR))
-                if EXTRA_DEBUG: _LOGGER.debug("found coordinator")
+                idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(entity.attributes.get(CONF_COORDINATOR))
+                if EXTRA_DEBUG: _LOGGER.debug("found coordinator entry in requests list")
                 try:
-                    idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes.get(CONF_SSID))
-                    if EXTRA_DEBUG: _LOGGER.debug("found ssid")
+                    idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(entity.attributes.get(CONF_SSID))
+                    if EXTRA_DEBUG: _LOGGER.debug("found ssid entry in requests list")
                     if ppsk:
-                        requests[idrequestcoord][CONF_DATA][idrequestssid][UNIFI_PRESHARED_KEYS] = keys                            
+                        # check for unique ppsk passwords on a found ssid request
+                        if password in [x[CONF_PASSWORD] for x in requests[idrequestcoord][CONF_DATA][idrequestssid][UNIFI_PRESHARED_KEYS]]:
+                            raise IntegrationError("Networks on the same PPSK-enabled SSID cannot have the same password")
+
+                        requests[idrequestcoord][CONF_DATA][idrequestssid][UNIFI_PRESHARED_KEYS][idkey] = {
+                            CONF_PASSWORD: password,
+                            UNIFI_NETWORKCONF_ID: network_id
+                        }
+                        if EXTRA_DEBUG: _LOGGER.debug("ppsk entry updated in requests list")
                     else:
                         # this condition should not be possible unless somehow two or more entities
-                        # with the same coordinator and ssid and no private preshared keys
+                        # with the same coordinator AND ssid AND no private preshared keys
                         # are created and selected
                         requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_PASSWORD] = password
                 except ValueError:
-                    if EXTRA_DEBUG: _LOGGER.debug("new ssid entry")
                     if ppsk:
+                        keys[idkey] = {
+                            CONF_PASSWORD: password,
+                            UNIFI_NETWORKCONF_ID: network_id
+                        }
                         entry = {
                             CONF_SSID: ssid,
                             UNIFI_PRESHARED_KEYS: keys
@@ -245,11 +252,15 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                             CONF_PASSWORD: password
                         }
                     requests[idrequestcoord][CONF_DATA].append(entry)
+                    if EXTRA_DEBUG: _LOGGER.debug("new ssid entry created in requests list")
             except ValueError:
-                if EXTRA_DEBUG: _LOGGER.debug("new coordinator entry")
                 if ppsk:
+                    keys[idkey] = {
+                        CONF_PASSWORD: password,
+                        UNIFI_NETWORKCONF_ID: network_id
+                    }
                     entry = {
-                        CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
+                        CONF_COORDINATOR: entity.attributes.get(CONF_COORDINATOR),
                         CONF_DATA: [{
                             CONF_SSID: ssid,
                             UNIFI_PRESHARED_KEYS: keys
@@ -257,25 +268,27 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                     }
                 else:
                     entry = {
-                        CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
+                        CONF_COORDINATOR: entity.attributes.get(CONF_COORDINATOR),
                         CONF_DATA: [{
                             CONF_SSID: ssid,
                             CONF_PASSWORD: password
                         }]
                     }
                 requests.append(entry)
+                if EXTRA_DEBUG: _LOGGER.debug("new coordinator entry created in requests list")
 
+        # send wlanconf change requests to controllers
         if EXTRA_DEBUG: _LOGGER.debug("requests: %s", requests)
-        for x in requests:
-            idcoord = _coordinator_index(x[CONF_COORDINATOR])
+        for request in requests:
+            idcoord = _coordinator_index(request[CONF_COORDINATOR])
             coordinator = coordinators[idcoord]
-            for y in x[CONF_DATA]:
+            for r in request[CONF_DATA]:
                 try:
-                    payload = {UNIFI_PRESHARED_KEYS: y[UNIFI_PRESHARED_KEYS]}
+                    payload = {UNIFI_PRESHARED_KEYS: r[UNIFI_PRESHARED_KEYS]}
                 except:
-                    payload = {UNIFI_PASSPHRASE: y[CONF_PASSWORD]}
-                if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", y[CONF_SSID], payload)
-                await coordinator.set_wlanconf(y[CONF_SSID], payload, False)
+                    payload = {UNIFI_PASSPHRASE: r[CONF_PASSWORD]}
+                if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", r[CONF_SSID], payload)
+                await coordinator.set_wlanconf(r[CONF_SSID], payload, False)
 
 
     async def custom_password_service(call: ServiceCall):
@@ -295,48 +308,49 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         enabled = call.data.get(CONF_ENABLED)
 
         requests = []
-        for k in states:
-            idcoord = _coordinator_index(k.attributes.get(CONF_COORDINATOR))
+        for entity in states:
+            idcoord = _coordinator_index(entity.attributes.get(CONF_COORDINATOR))
             coordinator = coordinators[idcoord]
-            ssid = k.attributes.get(CONF_SSID)
+            ssid = entity.attributes.get(CONF_SSID)
 
             try:
-                idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(k.attributes.get(CONF_COORDINATOR))
-                if EXTRA_DEBUG: _LOGGER.debug("found coordinator")
+                idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(entity.attributes.get(CONF_COORDINATOR))
+                if EXTRA_DEBUG: _LOGGER.debug("found coordinator entry in the requests list")
                 try:
-                    idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(k.attributes.get(CONF_SSID))
-                    if EXTRA_DEBUG: _LOGGER.debug("found ssid")
-                    # DO NOTHING
+                    idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(entity.attributes.get(CONF_SSID))
+                    if EXTRA_DEBUG: _LOGGER.debug("found ssid entry in the requests list")
+                    # do nothing since enabling the same SSID multiple times is redundant
                     # requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_ENABLED] = enabled
                 except ValueError:
-                    if EXTRA_DEBUG: _LOGGER.debug("new ssid entry")
                     entry = {
                         CONF_SSID: ssid,
                         CONF_ENABLED: enabled
                     }
                     requests[idrequestcoord][CONF_DATA].append(entry)
+                    if EXTRA_DEBUG: _LOGGER.debug("new ssid entry created in the requests list")
             except ValueError:
-                if EXTRA_DEBUG: _LOGGER.debug("new coordinator entry")
                 entry = {
-                    CONF_COORDINATOR: k.attributes.get(CONF_COORDINATOR),
+                    CONF_COORDINATOR: entity.attributes.get(CONF_COORDINATOR),
                     CONF_DATA: [{
                         CONF_SSID: ssid,
                         CONF_ENABLED: enabled
                     }]
                 }
                 requests.append(entry)
+                if EXTRA_DEBUG: _LOGGER.debug("new coordinator entry created in the requests list")
 
+        # send wlanconf change requests to controllers
         if EXTRA_DEBUG: _LOGGER.debug("requests: %s", requests)
-        for x in requests:
-            idcoord = _coordinator_index(x[CONF_COORDINATOR])
+        for request in requests:
+            idcoord = _coordinator_index(request[CONF_COORDINATOR])
             coordinator = coordinators[idcoord]
-            for y in x[CONF_DATA]:
+            for r in request[CONF_DATA]:
                 # boolean python values (uppercase) need to be json serialized (lowercase)
                 # payload = json.dumps({CONF_ENABLED: y[CONF_ENABLED]})
                 # apparently, the capitalized boolean value is actually REQUIRED ... weird
-                payload ={CONF_ENABLED: y[CONF_ENABLED]}
-                if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", y[CONF_SSID], payload)
-                await coordinator.set_wlanconf(y[CONF_SSID], payload, True)
+                payload ={CONF_ENABLED: r[CONF_ENABLED]}
+                if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", r[CONF_SSID], payload)
+                await coordinator.set_wlanconf(r[CONF_SSID], payload, True)
 
 
     hass.helpers.service.async_register_admin_service(

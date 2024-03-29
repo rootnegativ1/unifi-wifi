@@ -17,6 +17,14 @@ unifi_wifi:
         mac: !secret unifi_u6l_mac
     monitored_ssids:
       - name: Guest
+        fill_color: '#490361'
+        back_color: '#9cedf0'
+      - name: StuffandThings
+        preshared_keys:
+          - name: NoT
+            fill_color: '#a84032'
+            back_color: '#bfb7b6'
+          - name: IoT
 
 
 # logger:
@@ -45,8 +53,6 @@ template:
       press:
         - service: unifi_wifi.random_password
           data:
-            #name: myhouse
-            #ssid: Guest
             target: image.myhouse_guest_wifi
             method: word
 
@@ -55,8 +61,6 @@ template:
       press:
         - service: unifi_wifi.custom_password
           data:
-            #name: myhouse
-            #ssid: Guest
             target: image.myhouse_guest_wifi
             password: "SOME-KNOWN-DEFAULT"
 
@@ -65,8 +69,6 @@ template:
       press:
         - service: unifi_wifi.custom_password
           data:
-            #name: myhouse
-            #ssid: Guest
             target: image.myhouse_guest_wifi
             password: "{{states('input_text.guest_wifi')}}"
         - service: input_text.set_value

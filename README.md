@@ -39,7 +39,17 @@ unifi_wifi:
       - name: u6lite
         mac: !secret unifi_u6l_mac
     monitored_ssids:
-      - name: my-wireless-network
+      - name: LAN
+        fill_color: '#aaaaaa' # omit for default value #000000
+        back_color: '#bbbbbb' # omit for default value #ffffff
+      - name: my-ppsk-network
+        preshared_keys:
+          - name: Guest
+            fill_color: '#cccccc'
+            back_color: '#dddddd'
+          - name: IoT
+            fill_color: '#eeeeee'
+          - name: NoT
 ```
 
 ### Configuration Variables
@@ -69,9 +79,9 @@ unifi_wifi:
 
 - **managed_aps** <sup><sub>list</sub></sup> (optional) &nbsp; List of access points to force provision after changing a SSID password. The ```name``` key is user generated and does not affect anything other than log output. The ```mac``` key must be the MAC address of the access point which can be found in the contorller UI. Both ```name``` and ```mac``` keys are required.
 
-- **monitored_ssids** <sup><sub>list</sub></sup> (optional) &nbsp; Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update.
+- **monitored_ssids** <sup><sub>list</sub></sup> (optional) &nbsp; Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update. The color of the QR code can be changed using the ```fill_color``` (default is #000000 aka black) and ```back_color``` (default is #ffffff AKA white) keys where ```back_color``` is the background color. These colors must be provided as hex values.
   
-  > *Currently, when adding a PPSK-enabled SSID, images for each PPSK-connected VLAN will be created. The ability to specify which VLAN PPSK(s) to monitor is not yet supported.*
+  > *When adding a PPSK-enabled SSID, images for each PPSK-connected VLAN will be created by default. These will inherit the colors of their parent SSID. If you want to create images only for specific PPSK-enabled VLANs, then use the ```preshared_keys``` key to create a list of networks using the ```name``` key. Each entry may optionally have customized colors using the ```fill_color``` and ```back_color``` keys.*
 
 ## Services
 
@@ -95,7 +105,7 @@ unifi_wifi:
   ```
   
   > [!NOTE]
-  > *If you try setting private preshared keys on the same SSID to the same password, only the first VLAN (alphabetically) will have its password changed.*
+  > *If you try setting private preshared keys on the same SSID to the same password, ~~only the first VLAN (alphabetically) will have its password changed~~ the integration will create an error warning the user duplicate passwords are not allowed on the same SSID.*
 
 ### ```unifi_wifi.random_password```
   | Service data attribute | Optional | Description |
@@ -125,7 +135,7 @@ unifi_wifi:
   ```
 
   > [!NOTE]
-  > *Randomizing multiple private preshared keys on the same SSID will result in multiple random passwords generated. Which is the way it should be anyways ...*
+  > *Randomizing multiple private preshared keys on the same SSID will result in multiple random passwords generated. In the unlikely event multiple randomly created passwords are identical, the integration will create an error and not complete the service call.*
 
 ### ```unifi_wifi.enable_wlan```
   | Service data attribute | Optional | Description |
