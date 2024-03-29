@@ -25,10 +25,13 @@ from homeassistant.util import slugify
 from typing import List # required for type hinting (function annotation)
 from .const import (
     DOMAIN,
+    CONF_BACK_COLOR,
     CONF_COORDINATOR,
+    CONF_FILL_COLOR,
     CONF_MONITORED_SSIDS,
     CONF_NETWORK_NAME,
     CONF_PPSK,
+    CONF_PRESHARED_KEYS,
     CONF_QRTEXT,
     CONF_SITE,
     CONF_SSID,
@@ -63,25 +66,40 @@ async def async_setup_platform(
         x = coordinators[idconf]
         await x.async_refresh()
         for wlan in conf[CONF_MONITORED_SSIDS]:
-            # check if private pre-shared keys are configured
+
+            # check if preshared keys are configured for the current SSID
             keys = []
-            # ppsk = False
             for y in x.wlanconf:
                 if y[UNIFI_NAME] == wlan[CONF_NAME]:
                     try:
                         keys = y[UNIFI_PRESHARED_KEYS]
-                        # ppsk = True
-                        break
                     except:
                         break
 
             if keys:
-                for k in keys:
-                    entities.append(UnifiWifiImage(hass, x, wlan[CONF_NAME], k))
-                    idnetwork = [network[UNIFI_ID] for network in x.networkconf].index(k[UNIFI_NETWORKCONF_ID])
-                    _LOGGER.debug("Setting up image for SSID (ppsk) %s (%s) on coordinator %s", wlan[CONF_NAME], x.networkconf[idnetwork][UNIFI_NAME], conf[CONF_NAME])
+                if wlan[CONF_PRESHARED_KEYS]: # create image entities for SPECIFIC private pre-shared keys
+                    for ppsk in wlan[CONF_PRESHARED_KEYS]:
+                        try:
+                            # find network_id in networkconf
+                            idpresharedkey = [network[UNIFI_NAME] for network in x.networkconf].index(ppsk[CONF_NAME])
+                            idnetwork = x.networkconf[idpresharedkey][UNIFI_ID]
+                            if EXTRA_DEBUG: _LOGGER.debug("ppsk %s found at index %i with id %s in networkconf on coordinator %s", ppsk[CONF_NAME], idppskname, idnetwork, conf[CONF_NAME])
+
+                            # find [network_id, password] dictionary in private pre-shared keys
+                            idkey = [k[UNIFI_NETWORKCONF_ID] for k in keys].index(idnetwork)
+                            key = keys[idkey]
+                            if EXTRA_DEBUG: _LOGGER.debug("ppsk %s found with entry %s in wlanconf on coordinator %s", ppsk[CONF_NAME], key, conf[CONF_NAME])
+
+                            entities.append(UnifiWifiImage(hass, x, wlan[CONF_NAME], ppsk[CONF_FILL_COLOR], ppsk[CONF_BACK_COLOR], key))
+                        except ValueError as err:
+                            raise IntegrationError(f"ppsk {ppsk[CONF_NAME]} not found under SSID {wlan[CONF_NAME]} on coordinator {x.name}: {err}")
+                else:
+                    for key in keys: # create image entities for ALL private pre-shared keys
+                        entities.append(UnifiWifiImage(hass, x, wlan[CONF_NAME], wlan[CONF_FILL_COLOR], wlan[CONF_BACK_COLOR], key))
+                        idnetwork = [network[UNIFI_ID] for network in x.networkconf].index(key[UNIFI_NETWORKCONF_ID])
+                        _LOGGER.debug("Setting up image for SSID (ppsk) %s (%s) on coordinator %s", wlan[CONF_NAME], x.networkconf[idnetwork][UNIFI_NAME], conf[CONF_NAME])
             else:
-                entities.append(UnifiWifiImage(hass, x, wlan[CONF_NAME]))
+                entities.append(UnifiWifiImage(hass, x, wlan[CONF_NAME], wlan[CONF_FILL_COLOR], wlan[CONF_BACK_COLOR]))
                 _LOGGER.debug("Setting up image for SSID %s on coordinator %s", wlan[CONF_NAME], conf[CONF_NAME])
 
     async_add_entities(entities)
@@ -90,7 +108,7 @@ async def async_setup_platform(
 class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
     """Representation of a Unifi Wifi image."""
 
-    def __init__(self, hass: HomeAssistant, coordinator: UnifiWifiCoordinator, ssid: str, key: dict = {}):
+    def __init__(self, hass: HomeAssistant, coordinator: UnifiWifiCoordinator, ssid: str, fill_color: str, back_color: str, key: dict = {}):
         """Initialize the image."""
         super().__init__(coordinator)
 
@@ -103,7 +121,9 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             CONF_SITE: self.coordinator.site,
             CONF_SSID: ssid,
             UNIFI_ID: self.coordinator.wlanconf[idssid][UNIFI_ID],
-            CONF_TIMESTAMP: int(dt_util.utc_to_timestamp(dt))
+            CONF_TIMESTAMP: int(dt_util.utc_to_timestamp(dt)),
+            CONF_BACK_COLOR: back_color,
+            CONF_FILL_COLOR: fill_color
         }
 
         if bool(key):
@@ -203,7 +223,14 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         else:
             _LOGGER.debug("Unable to restore: %s", self._attr_name)
 
+    def _hex_to_rgb(self, value: str):
+        """return an RGB tuple of a hex color."""
+        # https://stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
+        value = value.lstrip('#')
+        return tuple(int(value[i:i+2], 16) for i in (0, 2, 4))
+
     def _create_qr(self) -> None:
+        """Create a QR code and save it as a PNG."""
         qrtext = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
 
         qr = qrcode.QRCode(
@@ -218,7 +245,8 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         #   so there's no need to pass them as arguments in make_image() method
         #   https://github.com/lincolnloop/python-qrcode/blob/main/qrcode/image/pil.py#L12
         #   img = qr.make_image(fill_color='black', back_color='white')
-        img = qr.make_image()
+        # img = qr.make_image()
+        img = qr.make_image(back_color=self._hex_to_rgb(self._attributes[CONF_BACK_COLOR]), fill_color=self._hex_to_rgb(self._attributes[CONF_FILL_COLOR]))
 
         # generate QR code file
         path = f"/config/www/{slugify(self._attr_name)}_qr.png"

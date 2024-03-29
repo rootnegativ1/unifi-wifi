@@ -21,10 +21,12 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import slugify
 from .const import (
     DOMAIN,
+    CONF_BACK_COLOR,
+    CONF_FILL_COLOR,
     CONF_FORCE_PROVISION,
     CONF_MANAGED_APS,
     CONF_MONITORED_SSIDS,
-    CONF_PPSK,
+    CONF_PRESHARED_KEYS,
     CONF_SITE,
     CONF_SSID,
     CONF_UNIFI_OS
@@ -35,6 +37,12 @@ from .coordinator import UnifiWifiCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 
+_PPSK_SCHEMA = vol.Schema({
+    vol.Required(CONF_NAME): cv.string,
+    vol.Optional(CONF_FILL_COLOR, default='#000000'): cv.color_hex,
+    vol.Optional(CONF_BACK_COLOR, default='#ffffff'): cv.color_hex
+})
+
 _AP_SCHEMA = vol.Schema({
     vol.Required(CONF_NAME): cv.string,
     vol.Required(CONF_MAC): cv.string
@@ -42,7 +50,11 @@ _AP_SCHEMA = vol.Schema({
 
 _SSID_SCHEMA = vol.Schema({
     vol.Required(CONF_NAME): cv.string,
-    # provide a way to list specific ppsk vlans
+    vol.Optional(CONF_PRESHARED_KEYS, default=[]): vol.All (
+        cv.ensure_list, [_PPSK_SCHEMA]
+    ),
+    vol.Optional(CONF_FILL_COLOR, default='#000000'): cv.color_hex,
+    vol.Optional(CONF_BACK_COLOR, default='#ffffff'): cv.color_hex
 })
 
 _SITE_SCHEMA = vol.Schema({

@@ -1,0 +1,50 @@
+[
+  {
+    "coordinator": "C1",
+    "data": [
+      {
+        "ssid": "C1S1",
+        "password": "C1S1P1"
+      },
+      {
+        "ssid": "C1S2",
+        "private_preshared_keys": [
+          {
+            "networkconf_id": "C1S2N1",
+            "password": "C1S2N1P1"
+          },
+          {
+            "networkconf_id": "C1S2N2",
+            "password": "C1S2N2P2"
+          },
+          {
+            "networkconf_id": "C1S2N3",
+            "password": "C1S2N3P3"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "coordinator": "C2",
+    "data": [
+      {
+        "ssid": "C2S1",
+        "password": "C2S1P1"
+      },
+      {
+        "ssid": "C2SS2",
+        "private_preshared_keys": [
+          {
+            "networkconf_id": "C2SS2N1",
+            "password": "C2SS2N1P1"
+          },
+          {
+            "networkconf_id": "C2SS2N2",
+            "password": "C2SS2N2P2"
+          }
+        ]
+      }
+    ]
+  }
+]
