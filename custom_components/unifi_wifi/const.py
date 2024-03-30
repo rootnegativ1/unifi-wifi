@@ -10,6 +10,7 @@ CONF_DELIMITER = 'delimiter'
 CONF_DELIMITER_TYPES = ['dash','space','underscore','none']
 CONF_FILL_COLOR = 'fill_color'
 CONF_FORCE_PROVISION = 'force_provision'
+CONF_HIDE_SSID = 'hide_ssid'
 CONF_MANAGED_APS = 'managed_aps'
 CONF_MAX_LENGTH = 'max_length'
 CONF_METHOD_TYPES = ['xkcd','word','char']
