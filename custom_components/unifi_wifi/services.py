@@ -28,6 +28,7 @@ from .const import (
     CONF_DATA,
     CONF_DELIMITER,
     CONF_DELIMITER_TYPES,
+    CONF_HIDE_SSID,
     CONF_MAX_LENGTH,
     CONF_METHOD_TYPES,
     CONF_MIN_LENGTH,
@@ -45,6 +46,7 @@ from . import password as pw
 SERVICE_CUSTOM_PASSWORD = 'custom_password'
 SERVICE_RANDOM_PASSWORD = 'random_password'
 SERVICE_ENABLE_WLAN = 'enable_wlan'
+SERVICE_HIDE_SSID = 'hide_ssid'
 
 EXTRA_DEBUG = False
 
@@ -113,6 +115,11 @@ SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
 SERVICE_ENABLE_WLAN_SCHEMA = vol.Schema({
     vol.Required(CONF_TARGET): TARGET_SCHEMA,
     vol.Required(CONF_ENABLED): cv.boolean,
+})
+
+SERVICE_HIDE_SSID_SCHEMA = vol.Schema({
+    vol.Required(CONF_TARGET): TARGET_SCHEMA,
+    vol.Required(CONF_HIDE_SSID): cv.boolean,
 })
 
 
@@ -301,11 +308,9 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         await _change_password(call, True)
 
 
-    async def enable_wlan_service(call: ServiceCall):
-        """Enable or disable an SSID."""
-        states = await _valid_entity_states(call.data.get(CONF_TARGET), call.context)
-
-        enabled = call.data.get(CONF_ENABLED)
+    async def _ssid_requests(states: List[str], key: str, value: str, force: bool = False):
+        """Used to make SSID level API changes."""
+        """This does not work (yet?) for PPSK level changes."""
 
         requests = []
         for entity in states:
@@ -319,12 +324,12 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                 try:
                     idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(entity.attributes.get(CONF_SSID))
                     if EXTRA_DEBUG: _LOGGER.debug("found ssid entry in the requests list")
-                    # do nothing since enabling the same SSID multiple times is redundant
-                    # requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_ENABLED] = enabled
+                    # do nothing since editing the same SSID multiple times is redundant
+                    # requests[idrequestcoord][CONF_DATA][idrequestssid][key] = value
                 except ValueError:
                     entry = {
                         CONF_SSID: ssid,
-                        CONF_ENABLED: enabled
+                        key: value
                     }
                     requests[idrequestcoord][CONF_DATA].append(entry)
                     if EXTRA_DEBUG: _LOGGER.debug("new ssid entry created in the requests list")
@@ -333,7 +338,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                     CONF_COORDINATOR: entity.attributes.get(CONF_COORDINATOR),
                     CONF_DATA: [{
                         CONF_SSID: ssid,
-                        CONF_ENABLED: enabled
+                        key: value
                     }]
                 }
                 requests.append(entry)
@@ -346,11 +351,29 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
             coordinator = coordinators[idcoord]
             for r in request[CONF_DATA]:
                 # boolean python values (uppercase) need to be json serialized (lowercase)
-                # payload = json.dumps({CONF_ENABLED: y[CONF_ENABLED]})
+                # payload = json.dumps({key: y[key]})
                 # apparently, the capitalized boolean value is actually REQUIRED ... weird
-                payload ={CONF_ENABLED: r[CONF_ENABLED]}
+                payload ={key: r[key]}
                 if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", r[CONF_SSID], payload)
-                await coordinator.set_wlanconf(r[CONF_SSID], payload, True)
+                await coordinator.set_wlanconf(r[CONF_SSID], payload, force)
+
+
+    async def enable_wlan_service(call: ServiceCall):
+        """Enable or disable an SSID."""
+        states = await _valid_entity_states(call.data.get(CONF_TARGET), call.context)
+
+        enabled = call.data.get(CONF_ENABLED)
+
+        await _ssid_requests(states, CONF_ENABLED, enabled, True)
+
+
+    async def hide_ssid_service(call: ServiceCall):
+        """Toggle hiding an SSID."""
+        states = await _valid_entity_states(call.data.get(CONF_TARGET), call.context)
+
+        hide_ssid = call.data.get(CONF_HIDE_SSID)
+
+        await _ssid_requests(states, CONF_HIDE_SSID, hide_ssid, True)
 
 
     hass.helpers.service.async_register_admin_service(
@@ -372,6 +395,13 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         SERVICE_ENABLE_WLAN,
         enable_wlan_service,
         schema=SERVICE_ENABLE_WLAN_SCHEMA
+    )
+
+    hass.helpers.service.async_register_admin_service(
+        DOMAIN,
+        SERVICE_HIDE_SSID,
+        hide_ssid_service,
+        schema=SERVICE_HIDE_SSID_SCHEMA
     )
 
     return True

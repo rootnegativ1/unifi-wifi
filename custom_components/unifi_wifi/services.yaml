@@ -101,7 +101,7 @@ enable_wlan:
   fields:
     target:
       name: Target
-      description: Wireless network(s) whose password you want to change
+      description: Wireless network(s) you want to enable (disable)
       required: true
       selector:
         target:
@@ -113,5 +113,26 @@ enable_wlan:
       description: Set the enable state
       required: true
       example: true
+      selector:
+        boolean:
+
+hide_ssid:
+  name: Hide SSIDs
+  description: Enable (or disable) a hiding specific WLAN on a UniFi network
+  fields:
+    target:
+      name: Target
+      description: Wireless network(s) you want to hide (broadcast)
+      required: true
+      selector:
+        target:
+          entity:
+            integration: unifi_wifi
+            domain: image
+    hide_ssid:
+      name: Hide SSID
+      description: Set the hide state
+      required: true
+      example: false
       selector:
         boolean:

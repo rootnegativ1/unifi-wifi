@@ -147,17 +147,39 @@ unifi_wifi:
 
   ```yaml
     # example
+    service: unifi_wifi.enable_wlan
+    data:
+      target:
+        entity_id:
+          - image.myhouse_guest_wifi
+          - image.myhouse_testnetworkppsk_guest_wifi
+      enabled: false
+  ```
+
+  > [!IMPORTANT]
+  > *Disabling a PPSK network will disable its SSID which will disable all other associated PPSK networks; the same applies when enabling.*
+
+# ```unifi_wifi.hide_ssid```
+  | Service data attribute | Optional | Description |
+  |---|---|---|
+  | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
+  | hide_ssid | no | enabled = true, disabled = false |
+
+  Enable (or disable) hiding a specific SSID on a UniFi network controller. *For this change to take effect properly, all (managed) access points will be re-provisioned regardless of the value of ```force_provision```.*
+
+  ```yaml
+    # example
     service: unifi_wifi.random_password
     data:
       target:
         entity_id:
           - image.myhouse_guest_wifi
           - image.myhouse_testnetworkppsk_guest_wifi
-      enable: false
+      hide_ssid: false
   ```
 
   > [!IMPORTANT]
-  > *Disabling a PPSK network will disable its SSID which will disable all other associated PPSK networks; the same applies when enabling.*
+  > *Hiding a PPSK network will hide its SSID which will also hide all other associated PPSK networks; the same applies when unhiding.*
 
 ## Logging
 Debug logs can be enabled with the following in ```configuration.yaml```
