@@ -94,7 +94,6 @@ unifi_wifi:
   Change SSID password(s) on UniFi network to a custom string. New passwords must contain only ASCII characters and be between 8 and 63 characters in length.
 
   ```yaml
-    # example
     service: unifi_wifi.custom_password
     data:
       target:
@@ -124,7 +123,6 @@ unifi_wifi:
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
 
   ```yaml
-    # example
     service: unifi_wifi.random_password
     data:
       target:
@@ -146,7 +144,6 @@ unifi_wifi:
   Enable (or disable) a specific SSID on a UniFi network controller. *For this change to take effect properly, all (managed) access points will be re-provisioned regardless of the value of ```force_provision```.*
 
   ```yaml
-    # example
     service: unifi_wifi.enable_wlan
     data:
       target:
@@ -159,7 +156,7 @@ unifi_wifi:
   > [!IMPORTANT]
   > *Disabling a PPSK network will disable its SSID which will disable all other associated PPSK networks; the same applies when enabling.*
 
-# ```unifi_wifi.hide_ssid```
+### ```unifi_wifi.hide_ssid```
   | Service data attribute | Optional | Description |
   |---|---|---|
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
@@ -168,8 +165,7 @@ unifi_wifi:
   Enable (or disable) hiding a specific SSID on a UniFi network controller. *For this change to take effect properly, all (managed) access points will be re-provisioned regardless of the value of ```force_provision```.*
 
   ```yaml
-    # example
-    service: unifi_wifi.random_password
+    service: unifi_wifi.hide_ssid
     data:
       target:
         entity_id:
