@@ -37,6 +37,8 @@ from .const import (
     CONF_SITE,
     CONF_SSID,
     CONF_TIMESTAMP,
+    CONF_WPA3_SUPPORT,
+    CONF_WPA3_TRANSITION,
     UNIFI_ID,
     UNIFI_NAME,
     UNIFI_NETWORKCONF_ID,
@@ -47,7 +49,6 @@ from .const import (
 from .coordinator import UnifiWifiCoordinator
 
 EXTRA_DEBUG = False
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -125,7 +126,9 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             UNIFI_ID: self.coordinator.wlanconf[idssid][UNIFI_ID],
             CONF_TIMESTAMP: int(dt_util.utc_to_timestamp(dt)),
             CONF_BACK_COLOR: back_color,
-            CONF_FILL_COLOR: fill_color
+            CONF_FILL_COLOR: fill_color,
+            CONF_WPA3_SUPPORT: self.coordinator.wlanconf[idssid][CONF_WPA3_SUPPORT],
+            CONF_WPA3_TRANSITION: self.coordinator.wlanconf[idssid][CONF_WPA3_TRANSITION]
         }
 
         if bool(key):
@@ -139,7 +142,6 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attr_name = f"{self._attributes[CONF_COORDINATOR]} {ssid} wifi"
 
         self._attributes[CONF_PPSK] = bool(key)
-        self._attributes[CONF_QRTEXT] = f"WIFI:T:WPA;S:{ssid};P:{self._attributes[CONF_PASSWORD]};;"
         self._attr_unique_id = slugify(f"{DOMAIN}_{self._attr_name}_image")
         self._attr_content_type: str = "image/png"
         self._attr_image_last_updated = dt
@@ -234,7 +236,14 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
     def _create_qr(self) -> None:
         """Create a QR code and save it as a PNG."""
-        qrtext = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
+        if self._attributes[CONF_WPA3_SUPPORT] and not self._attributes[CONF_WPA3_TRANSITION]:
+            # add the WPA2/WPA3 transition mode disable flag
+            # not sure if this is actually necessary
+            qrtext = f"WIFI:T:WPA;R:1;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
+        else:
+            qrtext = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
+
+        self._attributes[CONF_QRTEXT] = qrtext
 
         qr = qrcode.QRCode(
             version=1,
@@ -244,11 +253,6 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         )
         qr.add_data(qrtext)
         qr.make(fit=True)
-        # fill_color defaults to black and back_color defaults to white
-        #   so there's no need to pass them as arguments in make_image() method
-        #   https://github.com/lincolnloop/python-qrcode/blob/main/qrcode/image/pil.py#L12
-        #   img = qr.make_image(fill_color='black', back_color='white')
-        # img = qr.make_image()
         img = qr.make_image(back_color=self._hex_to_rgb(self._attributes[CONF_BACK_COLOR]), fill_color=self._hex_to_rgb(self._attributes[CONF_FILL_COLOR]))
 
         # generate QR code file
