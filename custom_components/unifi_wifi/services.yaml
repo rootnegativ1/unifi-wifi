@@ -15,7 +15,7 @@ custom_password:
             domain: image
     password:
       name: Password
-      description: User-provided password
+      description: User-provided password (min=8, max=63)
       required: true
       selector:
         text:
