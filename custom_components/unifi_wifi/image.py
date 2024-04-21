@@ -85,7 +85,7 @@ async def async_setup_platform(
                             # find network_id in networkconf
                             idpresharedkey = [network[UNIFI_NAME] for network in x.networkconf].index(ppsk[CONF_NAME])
                             idnetwork = x.networkconf[idpresharedkey][UNIFI_ID]
-                            if EXTRA_DEBUG: _LOGGER.debug("ppsk %s found at index %i with id %s in networkconf on coordinator %s", ppsk[CONF_NAME], idppskname, idnetwork, conf[CONF_NAME])
+                            if EXTRA_DEBUG: _LOGGER.debug("ppsk %s found at index %i with id %s in networkconf on coordinator %s", ppsk[CONF_NAME], idpresharedkey, idnetwork, conf[CONF_NAME])
 
                             # find [network_id, password] dictionary in private pre-shared keys
                             idkey = [k[UNIFI_NETWORKCONF_ID] for k in keys].index(idnetwork)
@@ -116,6 +116,14 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
         idssid = self._ssid_index(ssid)
 
+        if EXTRA_DEBUG:
+            if bool(key):
+                idnetwork = [x[UNIFI_ID] for x in self.coordinator.networkconf].index(key[UNIFI_NETWORKCONF_ID])
+                name = slugify(f"{self.coordinator.name} {ssid} {self.coordinator.networkconf[idnetwork][UNIFI_NAME]} wifi")
+            else:
+                name = slugify(f"{self.coordinator.name} {ssid} wifi")
+            _LOGGER.debug("wlanconf for image.%s: [%s]", name, self.coordinator.wlanconf[idssid])
+
         dt = dt_util.utcnow()
         self._attributes = {
             CONF_ENABLED: self.coordinator.wlanconf[idssid][CONF_ENABLED],
@@ -136,7 +144,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attributes[UNIFI_NETWORKCONF_ID] = key[UNIFI_NETWORKCONF_ID]
             idnetwork = [x[UNIFI_ID] for x in self.coordinator.networkconf].index(key[UNIFI_NETWORKCONF_ID])
             self._attributes[CONF_NETWORK_NAME] = self.coordinator.networkconf[idnetwork][UNIFI_NAME]
-            self._attr_name = f"{self._attributes[CONF_COORDINATOR]} {ssid} {self._attributes[CONF_NETWORK_NAME]} wifi"            
+            self._attr_name = f"{self._attributes[CONF_COORDINATOR]} {ssid} {self._attributes[CONF_NETWORK_NAME]} wifi"
         else:
             self._attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_PASSPHRASE]
             self._attr_name = f"{self._attributes[CONF_COORDINATOR]} {ssid} wifi"
