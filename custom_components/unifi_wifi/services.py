@@ -19,6 +19,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, Context
 from homeassistant.exceptions import InvalidEntityFormatError, ServiceValidationError, Unauthorized, IntegrationError
 from homeassistant.helpers import config_validation as cv, entity_registry
 from homeassistant.helpers import service
+from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.typing import ConfigType
 from typing import List # required for type hinting (function annotation) using List
 from .const import (
@@ -376,28 +377,32 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         await _ssid_requests(states, CONF_HIDE_SSID, hide_ssid, True)
 
 
-    hass.helpers.service.async_register_admin_service(
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_CUSTOM_PASSWORD,
         custom_password_service,
         schema=SERVICE_CUSTOM_PASSWORD_SCHEMA
     )
 
-    hass.helpers.service.async_register_admin_service(
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_RANDOM_PASSWORD,
         random_password_service,
         schema=SERVICE_RANDOM_PASSWORD_SCHEMA
     )
 
-    hass.helpers.service.async_register_admin_service(
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_ENABLE_WLAN,
         enable_wlan_service,
         schema=SERVICE_ENABLE_WLAN_SCHEMA
     )
 
-    hass.helpers.service.async_register_admin_service(
+    async_register_admin_service(
+        hass,
         DOMAIN,
         SERVICE_HIDE_SSID,
         hide_ssid_service,
