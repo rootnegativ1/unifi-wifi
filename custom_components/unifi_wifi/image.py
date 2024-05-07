@@ -42,7 +42,7 @@ from .const import (
     UNIFI_ID,
     UNIFI_NAME,
     UNIFI_NETWORKCONF_ID,
-    UNIFI_PASSPHRASE,
+    UNIFI_X_PASSPHRASE,
     UNIFI_PASSWORD,
     UNIFI_PRESHARED_KEYS
 )
@@ -146,7 +146,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attributes[CONF_NETWORK_NAME] = self.coordinator.networkconf[idnetwork][UNIFI_NAME]
             self._attr_name = f"{self._attributes[CONF_COORDINATOR]} {ssid} {self._attributes[CONF_NETWORK_NAME]} wifi"
         else:
-            self._attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_PASSPHRASE]
+            self._attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
             self._attr_name = f"{self._attributes[CONF_COORDINATOR]} {ssid} wifi"
 
         self._attributes[CONF_PPSK] = bool(key)
@@ -296,7 +296,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             idnetwork = self._network_index(self._attributes[UNIFI_NETWORKCONF_ID])
             new_password = self.coordinator.wlanconf[idssid][UNIFI_PRESHARED_KEYS][idnetwork][UNIFI_PASSWORD]
         else:
-            new_password = self.coordinator.wlanconf[idssid][UNIFI_PASSPHRASE]
+            new_password = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
 
         enabled_change = bool(self._attributes[CONF_ENABLED] != enabled_state)
         hide_change = bool(self._attributes[CONF_HIDE_SSID] != hide_state)

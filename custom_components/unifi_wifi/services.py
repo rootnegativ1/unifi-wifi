@@ -38,7 +38,7 @@ from .const import (
     CONF_WORD_COUNT,
     UNIFI_NAME,
     UNIFI_NETWORKCONF_ID,
-    UNIFI_PASSPHRASE,
+    UNIFI_X_PASSPHRASE,
     UNIFI_PRESHARED_KEYS
 )
 from .coordinator import UnifiWifiCoordinator
@@ -294,7 +294,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                 try:
                     payload = {UNIFI_PRESHARED_KEYS: r[UNIFI_PRESHARED_KEYS]}
                 except:
-                    payload = {UNIFI_PASSPHRASE: r[CONF_PASSWORD]}
+                    payload = {UNIFI_X_PASSPHRASE: r[CONF_PASSWORD]}
                 if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", r[CONF_SSID], payload)
                 await coordinator.set_wlanconf(r[CONF_SSID], payload, False)
 
