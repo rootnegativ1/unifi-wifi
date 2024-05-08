@@ -95,7 +95,7 @@ SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.All(
 SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
     vol.Schema({
         vol.Required(CONF_TARGET): TARGET_SCHEMA,
-        vol.Required(CONF_METHOD): vol.In(CONF_METHOD_TYPES),
+        vol.Optional(CONF_METHOD,default='word'): vol.In(CONF_METHOD_TYPES),
         vol.Optional(CONF_DELIMITER, default='dash'): vol.In(CONF_DELIMITER_TYPES),
         vol.Optional(CONF_MIN_LENGTH, default=5): vol.All(
             vol.Coerce(int), vol.Range(min=3, max=9)

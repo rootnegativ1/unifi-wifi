@@ -35,8 +35,8 @@ random_password:
             domain: image
     method:
       name: Method
-      description: char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated)
-      required: true
+      description: char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word)
+      required: false
       example: "word"
       selector:
         select:
