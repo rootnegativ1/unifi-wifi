@@ -55,16 +55,15 @@ EXTRA_DEBUG = False
 _LOGGER = logging.getLogger(__name__)
 
 
-def _is_ascii(obj: ConfigType):
+def _is_ascii(value: Any) -> str:
     """Verify a string is only ascii characters."""
     # password is already validated as a string in SERVICE_CUSTOM_PASSWORD_SCHEMA
     # should it be further validated as ascii?
     #    https://stackoverflow.com/questions/196345/how-to-check-if-a-string-in-python-is-in-ascii
     #    https://docs.python.org/3/library/stdtypes.html#str.isascii
-    s = obj[CONF_PASSWORD]
-    if not s.isascii():
+    if not value.isascii():
         raise ServiceValidationError("Password may only contain ASCII characters.")
-    return obj
+    return value
 
 def _check_word_lengths(obj: ConfigType):
     """Verify minimum and maximum word lengths are logical."""
@@ -82,15 +81,12 @@ TARGET_SCHEMA = vol.Any(
     cv.entity_id
 )
 
-SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.All(
-    vol.Schema({
-        vol.Required(CONF_TARGET): TARGET_SCHEMA,
-        vol.Required(CONF_PASSWORD): vol.All(
-            cv.string, vol.Length(min=8, max=63)
-        ),
-    }),
-    _is_ascii
-)
+SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.Schema({
+    vol.Required(CONF_TARGET): TARGET_SCHEMA,
+    vol.Required(CONF_PASSWORD): vol.All(
+        cv.string, vol.Length(min=8, max=63), _is_ascii
+    ),
+})
 
 SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
     vol.Schema({
