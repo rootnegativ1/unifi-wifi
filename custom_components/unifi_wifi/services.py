@@ -356,11 +356,13 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
     # DEPRECATED
     async def custom_password_service(call: ServiceCall):
         """Set a custom password."""
+        _LOGGER.warn("unifi_wifi.custom_password service has been deprecated. This will be removed in a later release. Please use unifi_wifi.wlan_password service instead.")
         await _change_password(call, False)
 
     # DEPRECATED
     async def random_password_service(call: ServiceCall):
         """Set a randomized password."""
+        _LOGGER.warn("unifi_wifi.random_password service has been deprecated. This will be removed in a later release. Please use unifi_wifi.wlan_password service instead.")
         await _change_password(call, True)
 
 
