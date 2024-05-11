@@ -33,6 +33,7 @@ CONF_WPA3_TRANSITION = 'wpa3_transition'
 UNIFI_ID = '_id'
 UNIFI_NAME = 'name' # duplicate
 UNIFI_NETWORKCONF_ID = 'networkconf_id'
+UNIFI_X_CSRF_TOKEN = 'X-CSRF-Token'
 UNIFI_X_PASSPHRASE = 'x_passphrase'
 UNIFI_PASSWORD = 'password' # duplicate
 UNIFI_PRESHARED_KEYS = 'private_preshared_keys'
