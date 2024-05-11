@@ -4,6 +4,7 @@
     "random_password": "mdi:form-textbox-password",
     "enable_wlan": "mdi:toggle-switch",
     "hide_ssid": "mdi:toggle-switch",
+    "hotspot_password": "mdi:account-group",
     "wlan_password":  "mdi:form-textbox-password"
   }
 }

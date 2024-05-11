@@ -36,5 +36,6 @@ UNIFI_NAME = 'name' # duplicate
 UNIFI_NETWORKCONF_ID = 'networkconf_id'
 UNIFI_X_CSRF_TOKEN = 'X-CSRF-Token'
 UNIFI_X_PASSPHRASE = 'x_passphrase'
+UNIFI_X_PASSWORD = 'x_password'
 UNIFI_PASSWORD = 'password' # duplicate
 UNIFI_PRESHARED_KEYS = 'private_preshared_keys'

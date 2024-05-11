@@ -137,6 +137,91 @@ hide_ssid:
       selector:
         boolean:
 
+hotspot_password:
+  name: Hotspot Password
+  description: Change guest hotspot password on UniFi network
+  fields:
+    coordinator:
+      name: Coordinator
+      description: coordinator whose hotspot password you want to change
+      required: true
+      selector:
+        text:
+    password:
+      name: Password
+      description: User-provided password (min=8, max=63)
+      required: false
+      selector:
+        text:
+    random:
+      name: Random
+      description: Should a randomly generated password be created
+      required: false
+      # default: true
+      selector:
+        boolean:
+    method:
+      name: Method
+      description: char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word)
+      required: false
+      example: "word"
+      selector:
+        select:
+          options:
+            - "char"
+            - "word"
+            - "xkcd"
+          mode: dropdown
+    delimiter:
+      name: Delimiter
+      description: Use spaces, dashes, or underscores to separate passphrase words [xkcd & word] (default=dash)
+      required: false
+      example: "space"
+      selector:
+        select:
+          options:
+            - "dash"
+            - "space"
+            - "underscore"
+            - "none"
+          mode: dropdown
+    min_length:
+      name: Min Length
+      description: Minimum word length [xkcd only] (default=5, min=3, max=9)
+      required: false
+      example: 5
+      selector:
+        number:
+          min: 3
+          max: 9
+    max_length:
+      name: Max Length
+      description: Maximum word length [xkcd only] (default=8, min=3, max=9)
+      required: false
+      example: 8
+      selector:
+        number:
+          min: 3
+          max: 9
+    word_count:
+      name: Word Count
+      description: Number of words to generate [xkcd & word] (default=4, min=3, max=6)
+      required: false
+      example: 4
+      selector:
+        number:
+          min: 3
+          max: 6
+    char_count:
+      name: Character Count
+      description: Number of alphanumeric characters to generate [char only] (default=24, min=8, max=63)
+      required: false
+      example: 24
+      selector:
+        number:
+          min: 8
+          max: 63
+
 wlan_password:
   name: Wlan Password
   description: Change WLAN password on UniFi network
