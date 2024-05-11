@@ -143,19 +143,19 @@ hotspot_password:
   fields:
     coordinator:
       name: Coordinator
-      description: coordinator whose hotspot password you want to change
+      description: coordinator whose hotspot password you want to change. Limited to one coordinator per service call.
       required: true
       selector:
         text:
     password:
       name: Password
-      description: User-provided password (min=8, max=63)
+      description: User-provided password (min=8, max=63). If provided, this will override any random settigs.
       required: false
       selector:
         text:
     random:
       name: Random
-      description: Should a randomly generated password be created
+      description: Should a randomly generated password be created (default=True)
       required: false
       # default: true
       selector:
@@ -237,13 +237,13 @@ wlan_password:
             domain: image
     password:
       name: Password
-      description: User-provided password (min=8, max=63)
+      description: user-provided password (min=8, max=63). If provided, this will override any random settings.
       required: false
       selector:
         text:
     random:
       name: Random
-      description: Should a randomly generated password be created
+      description: Should a randomly generated password be created (default=True)
       required: false
       # default: true
       selector:

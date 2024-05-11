@@ -86,6 +86,7 @@ unifi_wifi:
 ## Services
 
 ### ```unifi_wifi.custom_password```
+#### *DEPRECRATED*
   | Service data attribute | Optional | Description |
   |---|---|---|
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
@@ -107,6 +108,7 @@ unifi_wifi:
   > *If you try setting private preshared keys on the same SSID to the same password, ~~only the first VLAN (alphabetically) will have its password changed~~ the integration will create an error warning the user duplicate passwords are not allowed on the same SSID.*
 
 ### ```unifi_wifi.random_password```
+#### *DEPRECRATED*
   | Service data attribute | Optional | Description |
   |---|---|---|
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
@@ -176,6 +178,59 @@ unifi_wifi:
 
   > [!IMPORTANT]
   > *Hiding a PPSK network will hide its SSID which will also hide all other associated PPSK networks; the same applies when unhiding.*
+
+### ```unifi_wifi.hotspot_password```
+  | Service data attribute | Optional | Description |
+  |---|---|---|
+  | coordinator | no | coordinator whose hotspot password you want to change. Limited to one coordinator per service call. |
+  | password | yes | user-provided password (min=8, max=63). If provided, this will override any random settings. |
+  | random | yes | Should a randomly generated password be created (default=True) |
+  | method | yes | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word) |
+  | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd & word] (default=dash) |
+  | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
+  | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
+  | word_count | yes | number of words to generate [xkcd & word] (default=4, min=3, max=6) |
+  | char_count | yes | number of alphanumeric characters to generate [char only] (default=24, min=8, max=63) |
+
+  Change hotspot password on UniFi network to a randomly generated string
+  - char --> 24-character alphanumeric string
+  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^2]. This wordfile is located in ```custom_components/unfi_wifi```
+  - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
+
+  ```yaml
+    service: unifi_wifi.hotspot_password
+    data:
+      coordinator: myhouse
+      password: Hell0WoLRditsM3
+  ```
+
+### ```unifi_wifi.wlan_password```
+  | Service data attribute | Optional | Description |
+  |---|---|---|
+  | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
+  | password | yes | user-provided password (min=8, max=63). If provided, this will override any random settings. |
+  | random | yes | Should a randomly generated password be created (default=True) |
+  | method | yes | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word) |
+  | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd & word] (default=dash) |
+  | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
+  | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
+  | word_count | yes | number of words to generate [xkcd & word] (default=4, min=3, max=6) |
+  | char_count | yes | number of alphanumeric characters to generate [char only] (default=24, min=8, max=63) |
+
+  Change SSID password on UniFi network to a randomly generated string
+  - char --> 24-character alphanumeric string
+  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^2]. This wordfile is located in ```custom_components/unfi_wifi```
+  - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
+
+  ```yaml
+    service: unifi_wifi.wlan_password
+    data:
+      target:
+        entity_id:
+          - image.myhouse_guest_wifi
+          - image.myhouse_testnetworkppsk_guest_wifi
+      method: word
+  ```
 
 ## Logging
 Debug logs can be enabled with the following in ```configuration.yaml```
