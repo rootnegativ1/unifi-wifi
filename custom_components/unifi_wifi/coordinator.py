@@ -38,10 +38,9 @@ from .const import (
     CONF_SITE,
     CONF_UNIFI_OS,
     UNIFI_ID,
-    UNIFI_NAME
+    UNIFI_NAME,
+    UNIFI_X_CSRF_TOKEN
 )
-
-UNIFI_CSRF_TOKEN = 'X-CSRF-Token'
 
 EXTRA_DEBUG = False
 
@@ -148,7 +147,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         """log out of a UniFi controller."""
         headers = {'Content-Length': '0'}
         if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
+            headers[UNIFI_X_CSRF_TOKEN] = csrf_token
         kwargs = {'headers': headers}
         path = f"{self._login_prefix}/logout"
         resp = await self._request(session, 'post', path, **kwargs)
@@ -158,7 +157,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
     async def _force_provision(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
         headers = {'Content-Type': 'application/json'}
         if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
+            headers[UNIFI_X_CSRF_TOKEN] = csrf_token
         kwargs = {'headers': headers}
 
         aps = []
@@ -188,7 +187,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         """Get networkconf info from a UniFi controller."""
         headers = {}
         if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
+            headers[UNIFI_X_CSRF_TOKEN] = csrf_token
         kwargs = {'headers': headers}
         path = f"{self._api_prefix}/api/s/{self.site}/rest/networkconf"
         resp = await self._request(session, 'get', path, **kwargs)
@@ -202,7 +201,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         """Get system info from a UniFi controller."""
         headers = {}
         if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
+            headers[UNIFI_X_CSRF_TOKEN] = csrf_token
         kwargs = {'headers': headers}
         path = f"{self._api_prefix}/api/s/{self.site}/stat/sysinfo"
         resp = await self._request(session, 'get', path, **kwargs)
@@ -216,7 +215,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         """Get wlanconf info from a UniFi controller."""
         headers = {}
         if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
+            headers[UNIFI_X_CSRF_TOKEN] = csrf_token
         kwargs = {'headers': headers}
         path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf"
         resp = await self._request(session, 'get', path, **kwargs)
@@ -241,7 +240,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             resp = await self._login(session)
             csrf_token = ''
             if self._unifi_os:
-                csrf_token = resp.headers[UNIFI_CSRF_TOKEN]
+                csrf_token = resp.headers[UNIFI_X_CSRF_TOKEN]
 
             await self._get_sysinfo(session, csrf_token)
 
@@ -264,7 +263,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
             csrf_token = ''
             if self._unifi_os:
-                csrf_token = resp.headers[UNIFI_CSRF_TOKEN]
+                csrf_token = resp.headers[UNIFI_X_CSRF_TOKEN]
 
             await self._get_wlanconf(session, csrf_token)
 
@@ -272,7 +271,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             idno = self.wlanconf[idssid][UNIFI_ID]
             headers = {'Content-Type': 'application/json'}
             if self._unifi_os:
-                headers[UNIFI_CSRF_TOKEN] = csrf_token
+                headers[UNIFI_X_CSRF_TOKEN] = csrf_token
             kwargs = {'headers': headers, 'json': payload}
             path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf/{idno}"
             resp = await self._request(session, 'put', path, **kwargs)
