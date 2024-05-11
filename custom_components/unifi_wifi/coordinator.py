@@ -37,9 +37,9 @@ from .const import (
     CONF_MANAGED_APS,
     CONF_SITE,
     CONF_UNIFI_OS,
+    UNIFI_X_CSRF_TOKEN,
     UNIFI_ID,
-    UNIFI_NAME,
-    UNIFI_X_CSRF_TOKEN
+    UNIFI_NAME
 )
 
 EXTRA_DEBUG = False
@@ -183,7 +183,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
         return True
 
-    async def _get_networkconf(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
+    async def _get_networkconf(self, session: aiohttp.ClientSession, csrf_token: str):
         """Get networkconf info from a UniFi controller."""
         headers = {}
         if self._unifi_os:
@@ -195,9 +195,9 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         conf = await resp.json()
         self.networkconf = conf['data']
 
-        return True
+        return conf['data']
 
-    async def _get_sysinfo(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
+    async def _get_sysinfo(self, session: aiohttp.ClientSession, csrf_token: str):
         """Get system info from a UniFi controller."""
         headers = {}
         if self._unifi_os:
@@ -209,9 +209,9 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         conf = await resp.json()
         self.sysinfo = conf['data']
 
-        return True
+        return conf['data']
 
-    async def _get_wlanconf(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
+    async def _get_wlanconf(self, session: aiohttp.ClientSession, csrf_token: str):
         """Get wlanconf info from a UniFi controller."""
         headers = {}
         if self._unifi_os:
@@ -223,9 +223,23 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         conf = await resp.json()
         self.wlanconf = conf['data']
 
-        return True
+        return conf['data']
+
+    async def _get_restsetting(self, session: aiohttp.ClientSession, csrf_token: str):
+        """Get rest setting info from a UniFi controller."""
+        headers = {}
+        if self._unifi_os:
+            headers[UNIFI_X_CSRF_TOKEN] = csrf_token    
+        kwargs = {'headers': headers}
+        path = f"{self._api_prefix}/api/s/{self.site}/rest/setting"
+        resp = await self._request(session, 'get', path, **kwargs)
+
+        conf = await resp.json()
+
+        return conf['data']
 
     async def _update_info(self) -> bool:
+        """SOMETHING DESCRIPTIVE."""
         # this function is only used in _async_update_data()
         # which is used to keep the coordinator and its entities updated
         async with aiohttp.ClientSession(
@@ -253,6 +267,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             return await session.close()
 
     async def set_wlanconf(self, ssid: str, payload: str, force: bool = False) -> bool:
+        """SOMETHING DESCRIPTIVE."""
         async with aiohttp.ClientSession(
             connector=aiohttp.TCPConnector(ssl=False),
             cookie_jar=aiohttp.CookieJar(unsafe=True)
@@ -265,10 +280,10 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             if self._unifi_os:
                 csrf_token = resp.headers[UNIFI_X_CSRF_TOKEN]
 
-            await self._get_wlanconf(session, csrf_token)
+            data = await self._get_wlanconf(session, csrf_token)
+            idssid = [wlan[UNIFI_NAME] for wlan in data].index(ssid)
+            idno = data[idssid][UNIFI_ID]
 
-            idssid = [wlan[UNIFI_NAME] for wlan in self.wlanconf].index(ssid)
-            idno = self.wlanconf[idssid][UNIFI_ID]
             headers = {'Content-Type': 'application/json'}
             if self._unifi_os:
                 headers[UNIFI_X_CSRF_TOKEN] = csrf_token
@@ -284,3 +299,35 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             await session.close()
 
             return await self.async_request_refresh()
+
+    async def set_restsetting(self, key: str, payload: str, force: bool = False) -> bool:
+        """SOMETHING DESCRIPTIVE."""
+        async with aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(ssl=False),
+            cookie_jar=aiohttp.CookieJar(unsafe=True)
+        ) as session:
+            _LOGGER.debug("set_restsetting Setting new key (%s) value for %s", key, self.name)
+
+            resp = await self._login(session)
+
+            csrf_token = ''
+            if self._unifi_os:
+                csrf_token = resp.headers[UNIFI_X_CSRF_TOKEN]
+
+            data = await self._get_restsetting(session, csrf_token)
+            idkey = [d['key'] for d in data].index(key)
+            idno = data[idkey][UNIFI_ID]
+            
+            headers = {'Content-Type': 'application/json'}
+            if self._unifi_os:
+                headers[UNIFI_X_CSRF_TOKEN] = csrf_token
+            kwargs = {'headers': headers, 'json': payload}
+            path = f"{self._api_prefix}/api/s/{self.site}/rest/setting/{key}/{idno}"
+            resp = await self._request(session, 'put', path, **kwargs)
+
+            if self._force or force:
+                await self._force_provision(session, csrf_token)
+
+            await self._logout(session, csrf_token)
+
+            return await session.close()

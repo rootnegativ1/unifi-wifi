@@ -40,6 +40,7 @@ from .const import (
     UNIFI_NAME,
     UNIFI_NETWORKCONF_ID,
     UNIFI_X_PASSPHRASE,
+    UNIFI_X_PASSWORD,
     UNIFI_PRESHARED_KEYS
 )
 from .coordinator import UnifiWifiCoordinator
@@ -49,6 +50,7 @@ SERVICE_CUSTOM_PASSWORD = 'custom_password' # DEPRECATED
 SERVICE_RANDOM_PASSWORD = 'random_password' # DEPRECATED
 SERVICE_ENABLE_WLAN = 'enable_wlan'
 SERVICE_HIDE_SSID = 'hide_ssid'
+SERVICE_HOTSPOT_PASSWORD = 'hotspot_password'
 SERVICE_WLAN_PASSWORD = 'wlan_password'
 
 EXTRA_DEBUG = False
@@ -152,6 +154,14 @@ SERVICE_HIDE_SSID_SCHEMA = vol.Schema({
     vol.Required(CONF_TARGET): TARGET_SCHEMA,
     vol.Required(CONF_HIDE_SSID): cv.boolean,
 })
+
+SERVICE_HOTSPOT_PASSWORD_SCHEMA = vol.All(
+    PASSWORD_SCHEMA.extend({
+        vol.Required(CONF_COORDINATOR): cv.string,
+    }),
+    _check_custom_password,
+    _check_word_lengths
+)
 
 SERVICE_WLAN_PASSWORD_SCHEMA = vol.All(
     PASSWORD_SCHEMA.extend({
@@ -330,6 +340,19 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                 requests.append(entry)
                 if EXTRA_DEBUG: _LOGGER.debug("new coordinator entry created in requests list")
 
+        # send wlanconf change requests to controllers
+        if EXTRA_DEBUG: _LOGGER.debug("requests: %s", requests)
+        for request in requests:
+            idcoord = _coordinator_index(request[CONF_COORDINATOR])
+            coordinator = coordinators[idcoord]
+            for r in request[CONF_DATA]:
+                try:
+                    payload = {UNIFI_PRESHARED_KEYS: r[UNIFI_PRESHARED_KEYS]}
+                except:
+                    payload = {UNIFI_X_PASSPHRASE: r[CONF_PASSWORD]}
+                if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", r[CONF_SSID], payload)
+                await coordinator.set_wlanconf(r[CONF_SSID], payload, False)
+
     # DEPRECATED
     async def custom_password_service(call: ServiceCall):
         """Set a custom password."""
@@ -386,7 +409,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
                 # boolean python values (uppercase) need to be json serialized (lowercase)
                 # payload = json.dumps({key: y[key]})
                 # apparently, the capitalized boolean value is actually REQUIRED ... weird
-                payload ={key: r[key]}
+                payload = {key: r[key]}
                 if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", r[CONF_SSID], payload)
                 await coordinator.set_wlanconf(r[CONF_SSID], payload, force)
 
@@ -407,6 +430,22 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         hide_ssid = call.data.get(CONF_HIDE_SSID)
 
         await _ssid_requests(states, CONF_HIDE_SSID, hide_ssid, True)
+
+
+    async def hotspot_password_service(call: ServiceCall):
+        """Set a new hotspot password."""
+        target = call.data.get(CONF_COORDINATOR)
+        idcoord = _coordinator_index(target)
+        coordinator = coordinators[idcoord]
+        
+        random = call.data.get(CONF_RANDOM)
+        if random:
+            password = await _random_password(call)
+        else:
+            password = call.data.get(CONF_PASSWORD)
+        
+        payload = {"password_enabled": True, UNIFI_X_PASSWORD: password}
+        await coordinator.set_restsetting("guest_access", payload, False)
 
 
     async def wlan_password_service(call: ServiceCall):
@@ -541,6 +580,14 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         SERVICE_HIDE_SSID,
         hide_ssid_service,
         schema=SERVICE_HIDE_SSID_SCHEMA
+    )
+
+    async_register_admin_service(
+        hass,
+        DOMAIN,
+        SERVICE_HOTSPOT_PASSWORD,
+        hotspot_password_service,
+        schema=SERVICE_HOTSPOT_PASSWORD_SCHEMA
     )
 
     async_register_admin_service(
