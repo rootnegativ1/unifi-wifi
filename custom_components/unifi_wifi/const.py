@@ -26,11 +26,11 @@ CONF_SSID = 'ssid'
 CONF_TIMESTAMP = 'timestamp'
 CONF_UNIFI_OS = 'unifi_os'
 CONF_WORD_COUNT = 'word_count'
-CONF_WPA3_SUPPORT = 'wpa3_support'
-CONF_WPA3_TRANSITION = 'wpa3_transition'
+CONF_WPA_MODE = 'wpa_mode'
 
 # Some of the below values are duplicates of homeassistant.const values
 # This is done to allow for changes in UniFi API keys
+UNIFI_HIDE_SSID = 'hide_ssid' # duplicate
 UNIFI_ID = '_id'
 UNIFI_NAME = 'name' # duplicate
 UNIFI_NETWORKCONF_ID = 'networkconf_id'
@@ -39,3 +39,5 @@ UNIFI_X_PASSPHRASE = 'x_passphrase'
 UNIFI_X_PASSWORD = 'x_password'
 UNIFI_PASSWORD = 'password' # duplicate
 UNIFI_PRESHARED_KEYS = 'private_preshared_keys'
+UNIFI_WPA3_SUPPORT = 'wpa3_support'
+UNIFI_WPA3_TRANSITION = 'wpa3_transition'

@@ -37,6 +37,7 @@ from .const import (
     CONF_RANDOM,
     CONF_SSID,
     CONF_WORD_COUNT,
+    UNIFI_HIDE_SSID,
     UNIFI_NAME,
     UNIFI_NETWORKCONF_ID,
     UNIFI_X_PASSPHRASE,
@@ -431,7 +432,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
 
         hide_ssid = call.data.get(CONF_HIDE_SSID)
 
-        await _ssid_requests(states, CONF_HIDE_SSID, hide_ssid, True)
+        await _ssid_requests(states, UNIFI_HIDE_SSID, hide_ssid, True)
 
 
     async def hotspot_password_service(call: ServiceCall):

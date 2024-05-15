@@ -37,14 +37,16 @@ from .const import (
     CONF_SITE,
     CONF_SSID,
     CONF_TIMESTAMP,
-    CONF_WPA3_SUPPORT,
-    CONF_WPA3_TRANSITION,
+    CONF_WPA_MODE,
+    UNIFI_HIDE_SSID,
     UNIFI_ID,
     UNIFI_NAME,
     UNIFI_NETWORKCONF_ID,
     UNIFI_X_PASSPHRASE,
     UNIFI_PASSWORD,
-    UNIFI_PRESHARED_KEYS
+    UNIFI_PRESHARED_KEYS,
+    UNIFI_WPA3_SUPPORT,
+    UNIFI_WPA3_TRANSITION
 )
 from .coordinator import UnifiWifiCoordinator
 
@@ -127,17 +129,25 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         dt = dt_util.utcnow()
         self._attributes = {
             CONF_ENABLED: self.coordinator.wlanconf[idssid][CONF_ENABLED],
-            CONF_HIDE_SSID: self.coordinator.wlanconf[idssid][CONF_HIDE_SSID],
+            CONF_HIDE_SSID: self.coordinator.wlanconf[idssid][UNIFI_HIDE_SSID],
             CONF_COORDINATOR: self.coordinator.name,
             CONF_SITE: self.coordinator.site,
             CONF_SSID: ssid,
             UNIFI_ID: self.coordinator.wlanconf[idssid][UNIFI_ID],
             CONF_TIMESTAMP: int(dt_util.utc_to_timestamp(dt)),
             CONF_BACK_COLOR: back_color,
-            CONF_FILL_COLOR: fill_color,
-            CONF_WPA3_SUPPORT: self.coordinator.wlanconf[idssid][CONF_WPA3_SUPPORT],
-            CONF_WPA3_TRANSITION: self.coordinator.wlanconf[idssid][CONF_WPA3_TRANSITION]
+            CONF_FILL_COLOR: fill_color
         }
+
+        wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT],
+        wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
+        if wpa3_support and not wpa3_transition:
+            wpa_mode = 'WPA3'
+        elif wpa3_support and wpa3_transition:
+            wpa_mode = 'WPA2/WPA3'
+        else:
+            wpa_mode = 'WPA2'
+        self._attributes[CONF_WPA_MODE] = wpa_mode
 
         if bool(key):
             self._attributes[CONF_PASSWORD] = key[UNIFI_PASSWORD]
@@ -244,7 +254,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
     def _create_qr(self) -> None:
         """Create a QR code and save it as a PNG."""
-        if self._attributes[CONF_WPA3_SUPPORT] and not self._attributes[CONF_WPA3_TRANSITION]:
+        if self._attributes['wpa_mode'] == 'WPA3':
             # add the WPA2/WPA3 transition mode disable flag
             # not sure if this is actually necessary
             qrtext = f"WIFI:T:WPA;R:1;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
@@ -291,7 +301,17 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         """Update state and attributes when changes are detected."""
         idssid = self._ssid_index(self._attributes[CONF_SSID])
         enabled_state = self.coordinator.wlanconf[idssid][CONF_ENABLED]
-        hide_state = self.coordinator.wlanconf[idssid][CONF_HIDE_SSID]
+        hide_state = self.coordinator.wlanconf[idssid][UNIFI_HIDE_SSID]
+
+        wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT]
+        wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
+        if wpa3_support and not wpa3_transition:
+            wpa_mode = 'WPA3'
+        elif wpa3_support and wpa3_transition:
+            wpa_mode = 'WPA2/WPA3'
+        else:
+            wpa_mode = 'WPA2'
+
         if self._attributes[CONF_PPSK]:
             idnetwork = self._network_index(self._attributes[UNIFI_NETWORKCONF_ID])
             new_password = self.coordinator.wlanconf[idssid][UNIFI_PRESHARED_KEYS][idnetwork][UNIFI_PASSWORD]
@@ -300,33 +320,38 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
         enabled_change = bool(self._attributes[CONF_ENABLED] != enabled_state)
         hide_change = bool(self._attributes[CONF_HIDE_SSID] != hide_state)
+        wpa_change = bool(self._attributes[CONF_WPA_MODE] != wpa_mode)
         password_change = bool(self._attributes[CONF_PASSWORD] != new_password)
 
-        if not (enabled_change or hide_change or password_change):
+        if not (enabled_change or hide_change or wpa_change or password_change):
             return
 
         self._attributes[UNIFI_ID] = self.coordinator.wlanconf[idssid][UNIFI_ID]
-        self._attributes[CONF_ENABLED] = enabled_state
-        self._attributes[CONF_HIDE_SSID] = hide_state
-        self._attributes[CONF_PASSWORD] = new_password
-        self._attributes[CONF_QRTEXT] = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
 
         if enabled_change:
-            _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'enabled' if bool(self._attributes[CONF_ENABLED]) else 'disabled')
+            self._attributes[CONF_ENABLED] = enabled_state
+            _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'enabled' if bool(enabled_state) else 'disabled')
 
         if hide_change:
-            _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'hidden' if bool(self._attributes[CONF_HIDE_SSID]) else 'broadcasting')
+            self._attributes[CONF_HIDE_SSID] = hide_state
+            _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'hidden' if bool(hide_state) else 'broadcasting')
 
-        if password_change:
+        if wpa_change or password_change:
+            self._attributes[CONF_WPA_MODE] = wpa_mode
+            self._attributes[CONF_PASSWORD] = new_password
             dt = dt_util.utcnow()
             self._attributes[CONF_TIMESTAMP] = int(dt_util.utc_to_timestamp(dt))
             self._attr_image_last_updated = dt
 
             self._create_qr()
 
-            if self._attributes[CONF_PPSK]:
-                _LOGGER.debug("SSID (ppsk) %s (%s) on coordinator %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_NETWORK_NAME], self._attributes[CONF_COORDINATOR])
-            else:
-                _LOGGER.debug("SSID %s on coordinator %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR])
+            if wpa_change:
+                _LOGGER.debug("SSID %s on coordinator %s is now in %s mode", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], wpa_mode)
+
+            if password_change:
+                if self._attributes[CONF_PPSK]:
+                    _LOGGER.debug("SSID (ppsk) %s (%s) on coordinator %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_NETWORK_NAME], self._attributes[CONF_COORDINATOR])
+                else:
+                    _LOGGER.debug("SSID %s on coordinator %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR])
 
         self.async_write_ha_state()
