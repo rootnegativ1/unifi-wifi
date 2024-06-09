@@ -115,6 +115,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
     def __init__(self, hass: HomeAssistant, coordinator: UnifiWifiCoordinator, ssid: str, fill_color: str, back_color: str, key: dict = {}):
         """Initialize the image."""
         super().__init__(coordinator)
+        self.hass = hass
 
         idssid = self._ssid_index(ssid)
 
@@ -275,7 +276,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
         # generate QR code file
         path = f"/config/www/{slugify(self._attr_name)}_qr.png"
-        img.save(path)
+        self.hass.async_add_executor_job(img.save, path)
 
         # generate QR code byte string needed for the frontend
         x = io.BytesIO()
