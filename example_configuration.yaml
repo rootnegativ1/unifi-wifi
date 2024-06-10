@@ -51,7 +51,7 @@ template:
     - name: 'Guest Wifi Random'
       unique_id: guest_wifi_random
       press:
-        - service: unifi_wifi.random_password
+        - service: unifi_wifi.wlan_password
           data:
             target: image.myhouse_guest_wifi
             method: word
@@ -59,7 +59,7 @@ template:
     - name: 'Guest Wifi Default'
       unique_id: guest_wifi_default
       press:
-        - service: unifi_wifi.custom_password
+        - service: unifi_wifi.wlan_password
           data:
             target: image.myhouse_guest_wifi
             password: "SOME-KNOWN-DEFAULT"
@@ -67,7 +67,7 @@ template:
     - name: 'Guest Wifi Custom'
       unique_id: guest_wifi_custom
       press:
-        - service: unifi_wifi.custom_password
+        - service: unifi_wifi.wlan_password
           data:
             target: image.myhouse_guest_wifi
             password: "{{states('input_text.guest_wifi')}}"
@@ -75,6 +75,17 @@ template:
           data:
             entity_id: input_text.guest_wifi
             value: ''
+
+
+  sensor:
+    # https://community.home-assistant.io/t/unifi-network-number-of-active-clients-on-guest-ssid/377074
+    # requires native UniFi Network integration https://www.home-assistant.io/integrations/unifi
+    - name: Guest Wifi Client Count
+      unique_id: guest_wifi_client_count
+      state: >
+        {{ states.device_tracker | selectattr('state', 'eq', 'home') | selectattr('attributes.essid', 'eq', '<GUEST SSID HERE>') | list | count }}
+      # state: >
+      #   {{ states.device_tracker | selectattr('state', 'eq', 'home') | selectattr('attributes.essid', 'eq', '<PPSK SSID HERE>') | selectattr('attributes.vlan', 'eq', <GUEST NETWORK VLAN ID HERE>) | list | count }}
 
 
 input_text:
