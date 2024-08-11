@@ -41,7 +41,7 @@ automation:
       - platform: template
         value_template: '{{ now().day == 1 }}'
     action:
-      - service: button.press
+      - action: button.press
         target:
           entity_id: button.guest_wifi_random
 
@@ -51,7 +51,7 @@ template:
     - name: 'Guest Wifi Random'
       unique_id: guest_wifi_random
       press:
-        - service: unifi_wifi.wlan_password
+        - action: unifi_wifi.wlan_password
           data:
             target: image.myhouse_guest_wifi
             method: word
@@ -59,7 +59,7 @@ template:
     - name: 'Guest Wifi Default'
       unique_id: guest_wifi_default
       press:
-        - service: unifi_wifi.wlan_password
+        - action: unifi_wifi.wlan_password
           data:
             target: image.myhouse_guest_wifi
             password: "SOME-KNOWN-DEFAULT"
@@ -67,11 +67,11 @@ template:
     - name: 'Guest Wifi Custom'
       unique_id: guest_wifi_custom
       press:
-        - service: unifi_wifi.wlan_password
+        - action: unifi_wifi.wlan_password
           data:
             target: image.myhouse_guest_wifi
             password: "{{states('input_text.guest_wifi')}}"
-        - service: input_text.set_value
+        - action: input_text.set_value
           data:
             entity_id: input_text.guest_wifi
             value: ''
