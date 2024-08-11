@@ -3,7 +3,7 @@
 [![Github All Releases](https://img.shields.io/github/downloads/rootnegativ1/unifi-wifi/total.svg?&style=for-the-badge)]()
 
 # Unifi Wifi Home Assistant Integration
-Change SSID passwords and private preshared keys (PPSKs) as well as generate QR codes for them on UniFi Network controllers. Passwords & PPSKs can be custom or random strings using the included services. QR codes are represented as image entities and generated per network SSID. These images are located in ```/config/www```. If a password is changed through the controller-side web UI, the associated QR code is automatically updated in Home Assistant.
+Change SSID passwords and private preshared keys (PPSKs) as well as generate QR codes for them on UniFi Network controllers. Passwords & PPSKs can be custom or random strings using the included actions. QR codes are represented as image entities and generated per network SSID. These images are located in ```/config/www```. If a password is changed through the controller-side web UI, the associated QR code is automatically updated in Home Assistant.
 
 ## Manual Installation
 Download the contents of ```custom_components``` to your ```/config/custom_components``` directory
@@ -79,15 +79,15 @@ unifi_wifi:
 
 - **managed_aps** <sup><sub>list</sub></sup> (optional) &nbsp; List of access points to force provision after changing a SSID password. The ```name``` key is user generated and does not affect anything other than log output. The ```mac``` key must be the MAC address of the access point which can be found in the contorller UI. Both ```name``` and ```mac``` keys are required.
 
-- **monitored_ssids** <sup><sub>list</sub></sup> (optional) &nbsp; Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update. The color of the QR code can be changed using the ```fill_color``` (default is #000000 aka black) and ```back_color``` (default is #ffffff AKA white) keys where ```back_color``` is the background color. These colors must be provided as hex values.
+- **monitored_ssids** <sup><sub>list</sub></sup> (optional) &nbsp; Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update. The color of the QR code can be changed using the ```fill_color``` (default is #000000 AKA black) and ```back_color``` (default is #ffffff AKA white) keys where ```back_color``` is the background color. These colors must be provided as hex values.
   
   > *When adding a PPSK-enabled SSID, images for each __unique__ PPSK-connected VLAN will be created by default. This means if you have multiple passwords connecting to the same network, only the __first__ password will be used. The images will inherit the colors of their parent SSID. If you want to create images only for specific PPSK-enabled VLANs, then use the ```preshared_keys``` key to create a list of networks using the ```name``` key. Each entry may optionally have customized colors using the ```fill_color``` and ```back_color``` keys.*
 
-## Services
+## Actions
 
 ### ```unifi_wifi.custom_password```
 #### *DEPRECRATED*
-  | Service data attribute | Optional | Description |
+  | Action data attribute | Optional | Description |
   |---|---|---|
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | password | no | user-provided password |
@@ -95,7 +95,7 @@ unifi_wifi:
   Change SSID password(s) on UniFi network to a custom string. New passwords must contain only ASCII characters and be between 8 and 63 characters in length.
 
   ```yaml
-    service: unifi_wifi.custom_password
+    action: unifi_wifi.custom_password
     data:
       target:
         entity_id:
@@ -109,7 +109,7 @@ unifi_wifi:
 
 ### ```unifi_wifi.random_password```
 #### *DEPRECRATED*
-  | Service data attribute | Optional | Description |
+  | Action data attribute | Optional | Description |
   |---|---|---|
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | method | yes | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word) |
@@ -125,7 +125,7 @@ unifi_wifi:
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
 
   ```yaml
-    service: unifi_wifi.random_password
+    action: unifi_wifi.random_password
     data:
       target:
         entity_id:
@@ -135,10 +135,10 @@ unifi_wifi:
   ```
 
   > [!NOTE]
-  > *Randomizing multiple private preshared keys on the same SSID will result in multiple random passwords generated. In the unlikely event multiple randomly created passwords are identical, the integration will create an error and not complete the service call.*
+  > *Randomizing multiple private preshared keys on the same SSID will result in multiple random passwords generated. In the unlikely event multiple randomly created passwords are identical, the integration will create an error and not complete the action.*
 
 ### ```unifi_wifi.enable_wlan```
-  | Service data attribute | Optional | Description |
+  | Action data attribute | Optional | Description |
   |---|---|---|
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | enabled | no | enabled = true, disabled = false |
@@ -146,7 +146,7 @@ unifi_wifi:
   Enable (or disable) a specific SSID on a UniFi network controller. *For this change to take effect properly, all (managed) access points will be re-provisioned regardless of the value of ```force_provision```.*
 
   ```yaml
-    service: unifi_wifi.enable_wlan
+    action: unifi_wifi.enable_wlan
     data:
       target:
         entity_id:
@@ -159,7 +159,7 @@ unifi_wifi:
   > *Disabling a PPSK network will disable its SSID which will disable all other associated PPSK networks; the same applies when enabling.*
 
 ### ```unifi_wifi.hide_ssid```
-  | Service data attribute | Optional | Description |
+  | Action data attribute | Optional | Description |
   |---|---|---|
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | hide_ssid | no | enabled = true, disabled = false |
@@ -167,7 +167,7 @@ unifi_wifi:
   Enable (or disable) hiding a specific SSID on a UniFi network controller. *For this change to take effect properly, all (managed) access points will be re-provisioned regardless of the value of ```force_provision```.*
 
   ```yaml
-    service: unifi_wifi.hide_ssid
+    action: unifi_wifi.hide_ssid
     data:
       target:
         entity_id:
@@ -180,9 +180,9 @@ unifi_wifi:
   > *Hiding a PPSK network will hide its SSID which will also hide all other associated PPSK networks; the same applies when unhiding.*
 
 ### ```unifi_wifi.hotspot_password```
-  | Service data attribute | Optional | Description |
+  | Action data attribute | Optional | Description |
   |---|---|---|
-  | coordinator | no | coordinator whose hotspot password you want to change. Limited to one coordinator per service call. |
+  | coordinator | no | coordinator whose hotspot password you want to change. Limited to one coordinator per action |
   | password | yes | user-provided password (min=8, max=63). If provided, this will override any random settings. |
   | random | yes | Should a randomly generated password be created (default=True) |
   | method | yes | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word) |
@@ -198,14 +198,14 @@ unifi_wifi:
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
 
   ```yaml
-    service: unifi_wifi.hotspot_password
+    action: unifi_wifi.hotspot_password
     data:
       coordinator: myhouse
       password: Hell0WoLRditsM3
   ```
 
 ### ```unifi_wifi.wlan_password```
-  | Service data attribute | Optional | Description |
+  | Action data attribute | Optional | Description |
   |---|---|---|
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | password | yes | user-provided password (min=8, max=63). If provided, this will override any random settings. |
@@ -223,7 +223,7 @@ unifi_wifi:
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
 
   ```yaml
-    service: unifi_wifi.wlan_password
+    action: unifi_wifi.wlan_password
     data:
       target:
         entity_id:
