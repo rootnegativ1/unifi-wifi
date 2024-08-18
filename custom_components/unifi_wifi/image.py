@@ -242,6 +242,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             ]:
                 if attr in last_state.attributes:
                     self._attributes[attr] = last_state.attributes[attr]
+                    if EXTRA_DEBUG: _LOGGER.debug("Restored attribute %s (%s)", attr, last_state.attributes[attr])
 
             _LOGGER.debug("Restored: %s", self._attr_name)
         else:
@@ -272,7 +273,10 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         )
         qr.add_data(qrtext)
         qr.make(fit=True)
-        img = qr.make_image(back_color=self._hex_to_rgb(self._attributes[CONF_BACK_COLOR]), fill_color=self._hex_to_rgb(self._attributes[CONF_FILL_COLOR]))
+        img = qr.make_image(
+            back_color=self._hex_to_rgb(self._attributes[CONF_BACK_COLOR]),
+            fill_color=self._hex_to_rgb(self._attributes[CONF_FILL_COLOR])
+        )
 
         # generate QR code file
         path = f"/config/www/{slugify(self._attr_name)}_qr.png"
