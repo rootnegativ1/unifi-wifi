@@ -22,6 +22,7 @@ from homeassistant.util import slugify
 from .const import (
     DOMAIN,
     CONF_BACK_COLOR,
+    CONF_FILE_OUTPUT,
     CONF_FILL_COLOR,
     CONF_FORCE_PROVISION,
     CONF_MANAGED_APS,
@@ -40,7 +41,8 @@ _LOGGER = logging.getLogger(__name__)
 _PPSK_SCHEMA = vol.Schema({
     vol.Required(CONF_NAME): cv.string,
     vol.Optional(CONF_FILL_COLOR, default='#000000'): cv.color_hex,
-    vol.Optional(CONF_BACK_COLOR, default='#ffffff'): cv.color_hex
+    vol.Optional(CONF_BACK_COLOR, default='#ffffff'): cv.color_hex,
+    vol.Optional(CONF_FILE_OUTPUT, default=True): cv.boolean
 })
 
 _AP_SCHEMA = vol.Schema({
@@ -54,7 +56,8 @@ _SSID_SCHEMA = vol.Schema({
         cv.ensure_list, [_PPSK_SCHEMA]
     ),
     vol.Optional(CONF_FILL_COLOR, default='#000000'): cv.color_hex,
-    vol.Optional(CONF_BACK_COLOR, default='#ffffff'): cv.color_hex
+    vol.Optional(CONF_BACK_COLOR, default='#ffffff'): cv.color_hex,
+    vol.Optional(CONF_FILE_OUTPUT, default=True): cv.boolean
 })
 
 _SITE_SCHEMA = vol.Schema({
