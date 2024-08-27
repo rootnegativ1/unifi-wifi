@@ -77,11 +77,22 @@ unifi_wifi:
 
 - **force_provision** <sup><sub>boolean</sub></sup> (optional, default: false) &nbsp; The *truthiness* of this variable is used to enable or disable automatic force provisioning of adopted access points. Used in combination with ```managed_aps```, only the access points listed with be re-provisioned. If ```managed_aps``` is omitted, all access points adopted by the controller at the site will be re-provisioned. If set to false (or omitted), provisioning will be handled by the controller.
 
-- **managed_aps** <sup><sub>list</sub></sup> (optional) &nbsp; List of access points to force provision after changing a SSID password. The ```name``` key is user generated and does not affect anything other than log output. The ```mac``` key must be the MAC address of the access point which can be found in the contorller UI. Both ```name``` and ```mac``` keys are required.
+- **managed_aps** <sup><sub>list</sub></sup> (optional) &nbsp; List of access points to force provision after changing an SSID password.
+   - **name** <sup><sub>string</sub></sup> *REQUIRED* &nbsp; a user generated name which is mainly used for log output
+   - **mac** <sup><sub>string</sub></sup> *REQUIRED* &nbsp; the MAC address of the access point which can be found in the contorller UI
 
-- **monitored_ssids** <sup><sub>list</sub></sup> (optional) &nbsp; Using the ```name``` key, any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update. The color of the QR code can be changed using the ```fill_color``` (default is #000000 AKA black) and ```back_color``` (default is #ffffff AKA white) keys where ```back_color``` is the background color. These colors must be provided as hex values.
+- **monitored_ssids** <sup><sub>list</sub></sup> (optional) &nbsp; Any wireless networks included here will have image entities created. The image uses the [Image](https://www.home-assistant.io/integrations/image) native integration released in [2023.7](https://www.home-assistant.io/blog/2023/07/05/release-20237/#image-entities) to display a QR code for joining the wireless network and has attributes including enabled state, controller name, site name, ssid name, network id, password, ppsk status, QR code generation text, and timestamp of last update.
+   - **name** <sup><sub>string</sub></sup> *REQUIRED* &nbsp; Name of the image entity to be created. This will be prefaced with the coordinator name
+   - **fill_color** <sup><sub>hex</sub></sup> (optional, default: #000000 AKA black) &nbsp; The color of the QR code
+   - **back_color** <sup><sub>hex</sub></sup> (optional, default: #ffffff AKA white) &nbsp; The background color of the QR code
+   - **file_output** <sup><sub>boolean</sub></sup> (optional, default: true) &nbsp; control whether or not a PNG file is created in the ```www``` directory
   
-  > *When adding a PPSK-enabled SSID, images for each __unique__ PPSK-connected VLAN will be created by default. This means if you have multiple passwords connecting to the same network, only the __first__ password will be used. The images will inherit the colors of their parent SSID. If you want to create images only for specific PPSK-enabled VLANs, then use the ```preshared_keys``` key to create a list of networks using the ```name``` key. Each entry may optionally have customized colors using the ```fill_color``` and ```back_color``` keys.*
+   - **preshared_keys** <sup><sub>list</sub></sup> (optional, default: image entities generated for all preshared keys) &nbsp; If you want to create images only for specific PPSK-enabled VLANs, then create a list of networks below.
+      > *When adding a PPSK-enabled SSID, images for each __unique__ PPSK-connected VLAN will be created by default. This means if you have multiple passwords connecting to the same network, only the __first__ password will be used.
+      - **name** <sup><sub>string</sub></sup> *REQUIRED* &nbsp; Name of the image entity to be created. This will be prefaced with the coordinator and parent SSID names
+      - **fill_color** <sup><sub>hex</sub></sup> (optional, default: inherit parent SSID color) &nbsp; The color of the QR code
+      - **back_color** <sup><sub>hex</sub></sup> (optional, default: inherit parent SSID color) &nbsp; The background color of the QR code
+      - **file_output** <sup><sub>boolean</sub></sup> (optional, default: true) &nbsp; control if a PNG file is created in the ```www``` directory
 
 ## Actions
 

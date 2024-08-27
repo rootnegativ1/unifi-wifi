@@ -8,6 +8,7 @@ CONF_COORDINATOR = 'coordinator'
 CONF_DATA = 'data'
 CONF_DELIMITER = 'delimiter'
 CONF_DELIMITER_TYPES = ['dash','space','underscore','none']
+CONF_FILE_OUTPUT = 'file_output'
 CONF_FILL_COLOR = 'fill_color'
 CONF_FORCE_PROVISION = 'force_provision'
 CONF_HIDE_SSID = 'hide_ssid'
