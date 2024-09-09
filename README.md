@@ -39,10 +39,14 @@ unifi_wifi:
       - name: u6lite
         mac: !secret unifi_u6l_mac
     monitored_ssids:
-      - name: LAN
+      - name: LAN-of-the-living
         fill_color: '#aaaaaa' # omit for default value #000000
         back_color: '#bbbbbb' # omit for default value #ffffff
-      - name: my-ppsk-network
+        file_output: false
+      - name: my-ppsk-ssid
+        # fill_color: '#a432a8' # does nothing; ignored by any preshared keys
+        # back_color: '#32a852' # does nothing; ignored by any preshared keys
+        # file_output: false # does nothing; ignored by any preshared keys
         preshared_keys:
           - name: Guest
             fill_color: '#cccccc'
@@ -50,6 +54,7 @@ unifi_wifi:
           - name: IoT
             fill_color: '#eeeeee'
           - name: NoT
+            file_output: false
 ```
 
 ### Configuration Variables
@@ -86,13 +91,15 @@ unifi_wifi:
    - **fill_color** <sup><sub>hex</sub></sup> (optional, default: #000000 AKA black) &nbsp; The color of the QR code
    - **back_color** <sup><sub>hex</sub></sup> (optional, default: #ffffff AKA white) &nbsp; The background color of the QR code
    - **file_output** <sup><sub>boolean</sub></sup> (optional, default: true) &nbsp; control whether or not a PNG file is created in the ```www``` directory
+   - **qr_quality** <sup><sub>boolean</sub></sup> (optional, default: M) &nbsp; control the amount of error correction in the generated QR code. Possible options are: L, M, Q, H
   
    - **preshared_keys** <sup><sub>list</sub></sup> (optional, default: image entities generated for all preshared keys) &nbsp; If you want to create images only for specific PPSK-enabled VLANs, then create a list of networks below.
       > *When adding a PPSK-enabled SSID, images for each __unique__ PPSK-connected VLAN will be created by default. This means if you have multiple passwords connecting to the same network, only the __first__ password will be used.
       - **name** <sup><sub>string</sub></sup> *REQUIRED* &nbsp; Name of the image entity to be created. This will be prefaced with the coordinator and parent SSID names
-      - **fill_color** <sup><sub>hex</sub></sup> (optional, default: inherit parent SSID color) &nbsp; The color of the QR code
-      - **back_color** <sup><sub>hex</sub></sup> (optional, default: inherit parent SSID color) &nbsp; The background color of the QR code
+      - **fill_color** <sup><sub>hex</sub></sup> (optional, default: #000000 AKA black) &nbsp; The color of the QR code
+      - **back_color** <sup><sub>hex</sub></sup> (optional, default: #ffffff AKA white) &nbsp; The background color of the QR code
       - **file_output** <sup><sub>boolean</sub></sup> (optional, default: true) &nbsp; control if a PNG file is created in the ```www``` directory
+      - **qr_quality** <sup><sub>boolean</sub></sup> (optional, default: M) &nbsp; control the amount of error correction in the generated QR code. Possible options are: L, M, Q, H
 
 ## Actions
 
@@ -252,10 +259,8 @@ logger:
     custom_components.unifi_wifi: debug
 ```
 
-In addition to the above, there is extra level of debugging in each of ```coordinator.py```, ```image.py```, and ```services.py```. It can be enabled by setting ```EXTRA_DEBUG = True``` in whichever file(s) you want to debug.
-
 > [!WARNING]
-> This will expose usernames and passwords! It is intended ONLY TO VERIFY message content to and from a controller. Only use when needed, and **disable immediately afterwards**.
+> In addition to the above, there is extra level of debugging in each of ```coordinator.py```, ```image.py```, and ```services.py```. It can be enabled by setting ```EXTRA_DEBUG = True``` in whichever file(s) you want to debug. This will expose usernames and passwords! It is intended ONLY TO VERIFY message content to and from a controller. Only use when needed, and **disable immediately afterwards**.
 
 [^1]: https://my.home-assistant.io/create-link/
 [^2]: https://www.eff.org/dice

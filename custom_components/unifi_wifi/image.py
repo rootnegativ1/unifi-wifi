@@ -34,7 +34,8 @@ from .const import (
     CONF_NETWORK_NAME,
     CONF_PPSK,
     CONF_PRESHARED_KEYS,
-    CONF_QRTEXT,
+    CONF_QR_QUALITY,
+    CONF_QR_TEXT,
     CONF_SITE,
     CONF_SSID,
     CONF_TIMESTAMP,
@@ -95,7 +96,7 @@ async def async_setup_platform(
                             key = keys[idkey]
                             if EXTRA_DEBUG: _LOGGER.debug("ppsk %s found with entry %s in wlanconf on coordinator %s", ppsk[CONF_NAME], key, conf[CONF_NAME])
 
-                            image = UnifiWifiImage(hass, x, wlan[CONF_NAME], ppsk[CONF_FILL_COLOR], ppsk[CONF_BACK_COLOR], ppsk[CONF_FILE_OUTPUT], key = key)
+                            image = UnifiWifiImage(hass, x, wlan[CONF_NAME], ppsk[CONF_FILL_COLOR], ppsk[CONF_BACK_COLOR], ppsk[CONF_FILE_OUTPUT], ppsk[CONF_QR_QUALITY], key = key)
                             entities.append(image)
                             i = [network[UNIFI_ID] for network in x.networkconf].index(key[UNIFI_NETWORKCONF_ID])
                             _LOGGER.debug("Setting up image for SSID (ppsk) %s (%s) on coordinator %s", wlan[CONF_NAME], x.networkconf[i][UNIFI_NAME], conf[CONF_NAME])
@@ -103,12 +104,12 @@ async def async_setup_platform(
                             raise IntegrationError(f"ppsk {ppsk[CONF_NAME]} not found under SSID {wlan[CONF_NAME]} on coordinator {x.name}: {err}")
                 else: # create image entities for ALL private pre-shared keys
                     for key in keys:
-                        image = UnifiWifiImage(hass, x, wlan[CONF_NAME], wlan[CONF_FILL_COLOR], wlan[CONF_BACK_COLOR], wlan[CONF_FILE_OUTPUT], key = key)
+                        image = UnifiWifiImage(hass, x, wlan[CONF_NAME], wlan[CONF_FILL_COLOR], wlan[CONF_BACK_COLOR], wlan[CONF_FILE_OUTPUT], wlan[CONF_QR_QUALITY], key = key)
                         entities.append(image)
                         i = [network[UNIFI_ID] for network in x.networkconf].index(key[UNIFI_NETWORKCONF_ID])
                         _LOGGER.debug("Setting up image for SSID (ppsk) %s (%s) on coordinator %s", wlan[CONF_NAME], x.networkconf[i][UNIFI_NAME], conf[CONF_NAME])
             else:
-                image = UnifiWifiImage(hass, x, wlan[CONF_NAME], wlan[CONF_FILL_COLOR], wlan[CONF_BACK_COLOR], wlan[CONF_FILE_OUTPUT])
+                image = UnifiWifiImage(hass, x, wlan[CONF_NAME], wlan[CONF_FILL_COLOR], wlan[CONF_BACK_COLOR], wlan[CONF_FILE_OUTPUT], wlan[CONF_QR_QUALITY])
                 entities.append(image)
                 _LOGGER.debug("Setting up image for SSID %s on coordinator %s", wlan[CONF_NAME], conf[CONF_NAME])
 
@@ -118,7 +119,7 @@ async def async_setup_platform(
 class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
     """Representation of a Unifi Wifi image."""
 
-    def __init__(self, hass: HomeAssistant, coordinator: UnifiWifiCoordinator, ssid: str, fill_color: str, back_color: str, output: bool, key: dict = {}):
+    def __init__(self, hass: HomeAssistant, coordinator: UnifiWifiCoordinator, ssid: str, fill_color: str, back_color: str, output: bool, quality: str, key: dict = {}):
         """Initialize the image."""
         super().__init__(coordinator)
         self.hass = hass
@@ -144,7 +145,8 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             CONF_TIMESTAMP: int(dt_util.utc_to_timestamp(dt)),
             CONF_BACK_COLOR: back_color,
             CONF_FILL_COLOR: fill_color,
-            CONF_FILE_OUTPUT: output
+            CONF_FILE_OUTPUT: output,
+            CONF_QR_QUALITY: quality
         }
 
         wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT],
@@ -242,7 +244,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
                 # CONF_PPSK,
                 # UNIFI_ID,
                 # CONF_PASSWORD,
-                # CONF_QRTEXT, 
+                # CONF_QR_TEXT, 
                 CONF_TIMESTAMP,
                 # UNIFI_NETWORKCONF_ID,
                 # CONF_NETWORK_NAME
@@ -270,13 +272,23 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         else:
             qrtext = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
 
-        self._attributes[CONF_QRTEXT] = qrtext
+        self._attributes[CONF_QR_TEXT] = qrtext
+
+        match self._attributes[CONF_QR_QUALITY]:
+            case 'L':
+                ec = qrcode.constants.ERROR_CORRECT_L
+            case 'M':
+                ec = qrcode.constants.ERROR_CORRECT_M
+            case 'Q':
+                ec = qrcode.constants.ERROR_CORRECT_Q
+            case 'H':
+                ec = qrcode.constants.ERROR_CORRECT_H
 
         qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_H,
-            box_size=16,
-            border=2
+            version = 1,
+            error_correction = ec,
+            box_size = 16,
+            border = 2
         )
         qr.add_data(qrtext)
         qr.make(fit=True)

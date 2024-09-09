@@ -28,6 +28,7 @@ from .const import (
     CONF_MANAGED_APS,
     CONF_MONITORED_SSIDS,
     CONF_PRESHARED_KEYS,
+    CONF_QR_QUALITY,
     CONF_SITE,
     CONF_SSID,
     CONF_UNIFI_OS
@@ -42,7 +43,8 @@ _PPSK_SCHEMA = vol.Schema({
     vol.Required(CONF_NAME): cv.string,
     vol.Optional(CONF_FILL_COLOR, default='#000000'): cv.color_hex,
     vol.Optional(CONF_BACK_COLOR, default='#ffffff'): cv.color_hex,
-    vol.Optional(CONF_FILE_OUTPUT, default=True): cv.boolean
+    vol.Optional(CONF_FILE_OUTPUT, default=True): cv.boolean,
+    vol.Optional(CONF_QR_QUALITY, default='M'): vol.In(['L','M','Q','H'])
 })
 
 _AP_SCHEMA = vol.Schema({
@@ -57,7 +59,8 @@ _SSID_SCHEMA = vol.Schema({
     ),
     vol.Optional(CONF_FILL_COLOR, default='#000000'): cv.color_hex,
     vol.Optional(CONF_BACK_COLOR, default='#ffffff'): cv.color_hex,
-    vol.Optional(CONF_FILE_OUTPUT, default=True): cv.boolean
+    vol.Optional(CONF_FILE_OUTPUT, default=True): cv.boolean,
+    vol.Optional(CONF_QR_QUALITY, default='M'): vol.In(['L','M','Q','H'])
 })
 
 _SITE_SCHEMA = vol.Schema({
