@@ -37,10 +37,11 @@ automation:
     alias: Guest Wifi
     description: On the first of each month set a random password for the Guest Wifi
     mode: single
-    trigger:
-      - platform: template
+    triggers:
+      - trigger: template
         value_template: '{{ now().day == 1 }}'
-    action:
+    conditions: []
+    actions:
       - action: button.press
         target:
           entity_id: button.guest_wifi_random
