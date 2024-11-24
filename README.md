@@ -91,7 +91,7 @@ unifi_wifi:
    - **fill_color** <sup><sub>hex</sub></sup> (optional, default: #000000 AKA black) &nbsp; The color of the QR code
    - **back_color** <sup><sub>hex</sub></sup> (optional, default: #ffffff AKA white) &nbsp; The background color of the QR code
    - **file_output** <sup><sub>boolean</sub></sup> (optional, default: true) &nbsp; control whether or not a PNG file is created in the ```www``` directory
-   - **qr_quality** <sup><sub>boolean</sub></sup> (optional, default: M) &nbsp; control the amount of error correction in the generated QR code. Possible options are: L, M, Q, H
+   - **qr_quality** <sup><sub>char</sub></sup> (optional, default: M) &nbsp; control the amount of error correction in the generated QR code. Possible options are: L, M, Q, H
   
    - **preshared_keys** <sup><sub>list</sub></sup> (optional, default: image entities generated for all preshared keys) &nbsp; If you want to create images only for specific PPSK-enabled VLANs, then create a list of networks below.
       > *When adding a PPSK-enabled SSID, images for each __unique__ PPSK-connected VLAN will be created by default. This means if you have multiple passwords connecting to the same network, only the __first__ password will be used.
