@@ -1,10 +1,10 @@
 {
   "services": {
-    "custom_password": "mdi:form-textbox-password",
-    "random_password": "mdi:form-textbox-password",
-    "enable_wlan": "mdi:toggle-switch",
-    "hide_ssid": "mdi:toggle-switch",
-    "hotspot_password": "mdi:account-group",
-    "wlan_password":  "mdi:form-textbox-password"
+    "custom_password": {"service": "mdi:form-textbox-password"},
+    "random_password": {"service": "mdi:form-textbox-password"},
+    "enable_wlan": {"service": "mdi:toggle-switch"},
+    "hide_ssid": {"service": "mdi:toggle-switch"},
+    "hotspot_password": {"service": "mdi:account-group"},
+    "wlan_password":  {"service": "mdi:form-textbox-password"}
   }
 }
