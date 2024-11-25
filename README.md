@@ -263,10 +263,6 @@ logger:
 > In addition to the above, there is extra level of debugging in each of ```coordinator.py```, ```image.py```, and ```services.py```. It can be enabled by setting ```EXTRA_DEBUG = True``` in whichever file(s) you want to debug. This will expose usernames and passwords! It is intended ONLY TO VERIFY message content to and from a controller. Only use when needed, and **disable immediately afterwards**.
 
 ## References
-[^1]: https://my.home-assistant.io/create-link/
-[^2]: https://www.eff.org/dice
-
-## More References
 https://developers.home-assistant.io/docs/integration_fetching_data/
 https://stackoverflow.com/questions/26685248/difference-between-data-and-json-parameters-in-python-requests-package
 https://developers.home-assistant.io/docs/api_lib_auth/?_highlight=aiohttp#async-example
@@ -275,3 +271,7 @@ https://stackoverflow.com/questions/11277432/how-can-i-remove-a-key-from-a-pytho
 https://developers.home-assistant.io/docs/asyncio_working_with_async?_highlight=executor#calling-sync-functions-from-async
 https://stackoverflow.com/questions/22351254/python-script-to-convert-image-into-byte-array
 https://developers.home-assistant.io/docs/core/entity/image/#methods
+
+## Citations
+[^1]: https://my.home-assistant.io/create-link/
+[^2]: https://www.eff.org/dice
