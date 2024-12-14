@@ -20,7 +20,7 @@ from homeassistant.helpers.httpx_client import get_async_client
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.util import dt as dt_util
+from homeassistant.util.dt import parse_datetime, utcnow
 from homeassistant.util import slugify
 from typing import List # required for type hinting (function annotation)
 from .const import (
@@ -134,7 +134,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
                 name = slugify(f"{self.coordinator.name} {ssid} wifi")
             _LOGGER.debug("wlanconf for image.%s: [%s]", name, self.coordinator.wlanconf[idssid])
 
-        dt = dt_util.utcnow()
+        dt = utcnow()
         self._attributes = {
             CONF_ENABLED: self.coordinator.wlanconf[idssid][CONF_ENABLED],
             CONF_HIDE_SSID: self.coordinator.wlanconf[idssid][UNIFI_HIDE_SSID],
@@ -142,7 +142,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             CONF_SITE: self.coordinator.site,
             CONF_SSID: ssid,
             UNIFI_ID: self.coordinator.wlanconf[idssid][UNIFI_ID],
-            CONF_TIMESTAMP: int(dt_util.utc_to_timestamp(dt)),
+            CONF_TIMESTAMP: int(dt.timestamp()),
             CONF_BACK_COLOR: back_color,
             CONF_FILL_COLOR: fill_color,
             CONF_FILE_OUTPUT: output,
@@ -233,7 +233,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             #self._state = last_state.state
             # restore self._attr_image_last_updated since image uses it for the state
             #   and must be set to a datetime object
-            self._attr_image_last_updated = dt_util.parse_datetime(last_state.state)
+            self._attr_image_last_updated = parse_datetime(last_state.state)
 
             for attr in [
                 # CONF_ENABLED,
@@ -365,8 +365,8 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         if wpa_change or password_change:
             self._attributes[CONF_WPA_MODE] = wpa_mode
             self._attributes[CONF_PASSWORD] = new_password
-            dt = dt_util.utcnow()
-            self._attributes[CONF_TIMESTAMP] = int(dt_util.utc_to_timestamp(dt))
+            dt = utcnow()
+            self._attributes[CONF_TIMESTAMP] = int(dt.timestamp())
             self._attr_image_last_updated = dt
 
             self._create_qr()
