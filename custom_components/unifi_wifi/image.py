@@ -22,7 +22,6 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util.dt import parse_datetime, utcnow
 from homeassistant.util import slugify
-from typing import List # required for type hinting (function annotation)
 from .const import (
     DOMAIN,
     CONF_BACK_COLOR,
@@ -61,7 +60,7 @@ async def async_setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
     async_add_entities: AddEntitiesCallback,
-    coordinators: List[UnifiWifiCoordinator],
+    coordinators: list[UnifiWifiCoordinator],
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
     """Set up the Unifi Wifi image platform."""
