@@ -125,30 +125,32 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
         return response
 
-    async def _login(self, session: aiohttp.ClientSession) -> aiohttp.ClientResponse:
+    async def _login(self, session: aiohttp.ClientSession) -> list[dict]:
         """log into a UniFi controller."""
+        # Create headers for all requests to use with the current session
+        headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+
         payload = {'username': self._username, 'password': self._password}
-        headers = {'Content-Type': 'application/json', 'accept': 'application/json'}
         kwargs = {'json': payload, 'headers': headers}
         path = f"{self._login_prefix}/login"
-        return await self._request(session, 'post', path, **kwargs)
+        response = await self._request(session, 'post', path, **kwargs)
 
-    async def _logout(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
-        """log out of a UniFi controller."""
-        headers = {'Content-Length': '0'}
+        # Create a cookie from the current session response and add it to the headers
+        headers['Cookie'] = ', '.join(response.headers.getall('Set-Cookie'))
         if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
+            headers[UNIFI_CSRF_TOKEN] = response.headers.get(UNIFI_CSRF_TOKEN)
+
+        return headers
+
+    async def _logout(self, session: aiohttp.ClientSession, headers: list[dict]):
+        """log out of a UniFi controller."""
+        headers['Content-Length'] = '0'
         kwargs = {'headers': headers}
         path = f"{self._login_prefix}/logout"
         await self._request(session, 'post', path, **kwargs)
 
-        return True
-
-    async def _force_provision(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
+    async def _force_provision(self, session: aiohttp.ClientSession, headers: list[dict]):
         """Force provision any access points adopted by a UniFi controller."""
-        headers = {'Content-Type': 'application/json'}
-        if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
         kwargs = {'headers': headers}
 
         aps = []
@@ -172,13 +174,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             kwargs['json'] = payload
             await self._request(session, 'post', path, **kwargs)
 
-        return True
-
-    async def _get_networkconf(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
+    async def _get_networkconf(self, session: aiohttp.ClientSession, headers: list[dict]):
         """Get networkconf info from a UniFi controller."""
-        headers = {}
-        if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
         kwargs = {'headers': headers}
         path = f"{self._api_prefix}/api/s/{self.site}/rest/networkconf"
         response = await self._request(session, 'get', path, **kwargs)
@@ -186,14 +183,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         conf = await response.json()
         self.networkconf = conf['data']
 
-        # return conf['data']
-        return True
-
-    async def _get_sysinfo(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
+    async def _get_sysinfo(self, session: aiohttp.ClientSession, headers: list[dict]):
         """Get system info from a UniFi controller."""
-        headers = {}
-        if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
         kwargs = {'headers': headers}
         path = f"{self._api_prefix}/api/s/{self.site}/stat/sysinfo"
         response = await self._request(session, 'get', path, **kwargs)
@@ -201,14 +192,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         conf = await response.json()
         self.sysinfo = conf['data']
 
-        # return conf['data']
-        return True
-
-    async def _get_wlanconf(self, session: aiohttp.ClientSession, csrf_token: str) -> bool:
+    async def _get_wlanconf(self, session: aiohttp.ClientSession, headers: list[dict]):
         """Get wlanconf info from a UniFi controller."""
-        headers = {}
-        if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
         kwargs = {'headers': headers}
         path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf"
         response = await self._request(session, 'get', path, **kwargs)
@@ -216,14 +201,8 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         conf = await response.json()
         self.wlanconf = conf['data']
 
-        # return conf['data']
-        return True
-
-    async def _get_restsetting(self, session: aiohttp.ClientSession, csrf_token: str):
+    async def _get_restsetting(self, session: aiohttp.ClientSession, headers: list[dict]) -> list[dict]:
         """Get rest setting info from a UniFi controller."""
-        headers = {}
-        if self._unifi_os:
-            headers[UNIFI_CSRF_TOKEN] = csrf_token
         kwargs = {'headers': headers}
         path = f"{self._api_prefix}/api/s/{self.site}/rest/setting"
         response = await self._request(session, 'get', path, **kwargs)
@@ -244,93 +223,74 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             connector=aiohttp.TCPConnector(ssl=False),
             # without unsafe=True the login response cookie must be explicitly passed in each request
             # https://docs.aiohttp.org/en/stable/client_advanced.html#cookie-safety
-            cookie_jar=aiohttp.CookieJar(unsafe=True)
+            #cookie_jar=aiohttp.CookieJar(unsafe=True)
         ) as session:
             _LOGGER.debug("_update_info Updating info for %s", self.name)
 
-            response = await self._login(session)
-            csrf_token = ''
-            if self._unifi_os:
-                csrf_token = response.headers[UNIFI_CSRF_TOKEN]
+            headers = await self._login(session)
 
-            await self._get_sysinfo(session, csrf_token)
+            await self._get_sysinfo(session, headers)
+            await self._get_networkconf(session, headers)
+            await self._get_wlanconf(session, headers)
+            await self._logout(session, headers)
 
-            await self._get_networkconf(session, csrf_token)
-
-            await self._get_wlanconf(session, csrf_token)
-
-            await self._logout(session, csrf_token)
-
+            del headers # not sure if this is necessary
             return await session.close()
 
     async def set_wlanconf(self, ssid: str, payload: str, force: bool = False) -> bool:
         """Update a wireless network setting."""
         async with aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(ssl=False),
-            cookie_jar=aiohttp.CookieJar(unsafe=True)
+            connector=aiohttp.TCPConnector(ssl=False)
         ) as session:
             _LOGGER.debug("set_wlanconf Setting new conf value for %s for %s", ssid, self.name)
 
-            response = await self._login(session)
+            headers = await self._login(session)
 
-            csrf_token = ''
-            if self._unifi_os:
-                csrf_token = response.headers[UNIFI_CSRF_TOKEN]
-
-            await self._get_wlanconf(session, csrf_token)
+            # Find the unifi identification number for a specific SSID
+            await self._get_wlanconf(session, headers)
             idssid = [wlan[UNIFI_NAME] for wlan in self.wlanconf].index(ssid)
             idno = self.wlanconf[idssid][UNIFI_ID]
 
-            headers = {'Content-Type': 'application/json'}
-            if self._unifi_os:
-                headers[UNIFI_CSRF_TOKEN] = csrf_token
             kwargs = {'headers': headers, 'json': payload}
             path = f"{self._api_prefix}/api/s/{self.site}/rest/wlanconf/{idno}"
             response = await self._request(session, 'put', path, **kwargs)
 
             if self._force or force:
-                await self._force_provision(session, csrf_token)
+                await self._force_provision(session, headers)
 
-            await self._logout(session, csrf_token)
+            await self._logout(session, headers)
 
+            del headers
             await session.close()
 
             return await self.async_request_refresh()
 
     async def set_restsetting(self, key: str, payload: str, force: bool = False) -> bool:
         """Update a site setting."""
-        # BE CAREFUL!
-        # This function is currently intended only to update hotspot credentials.
+        # BE CAREFUL! This function is currently intended only to update hotspot credentials.
         # However, it is able to change many site settings when provided an existing key/payload combination
         async with aiohttp.ClientSession(
-            connector=aiohttp.TCPConnector(ssl=False),
-            cookie_jar=aiohttp.CookieJar(unsafe=True)
+            connector=aiohttp.TCPConnector(ssl=False)
         ) as session:
             _LOGGER.debug("set_restsetting Setting new key (%s) value for %s", key, self.name)
 
-            response = await self._login(session)
-
-            csrf_token = ''
-            if self._unifi_os:
-                csrf_token = response.headers[UNIFI_CSRF_TOKEN]
+            headers = await self._login(session)
 
             # download current site settings and read the _id value of the intended key
-            data = await self._get_restsetting(session, csrf_token)
+            data = await self._get_restsetting(session, headers)
             idkey = [d['key'] for d in data].index(key)
             idno = data[idkey][UNIFI_ID]
 
-            headers = {'Content-Type': 'application/json'}
-            if self._unifi_os:
-                headers[UNIFI_CSRF_TOKEN] = csrf_token
             kwargs = {'headers': headers, 'json': payload}
             path = f"{self._api_prefix}/api/s/{self.site}/rest/setting/{key}/{idno}"
             await self._request(session, 'put', path, **kwargs)
 
             if self._force or force:
-                await self._force_provision(session, csrf_token)
+                await self._force_provision(session, headers)
 
-            await self._logout(session, csrf_token)
+            await self._logout(session, headers)
 
+            del headers
             await session.close()
 
             return await self.async_request_refresh()
