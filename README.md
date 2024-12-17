@@ -213,7 +213,7 @@ unifi_wifi:
   Change hotspot password on UniFi network to a randomly generated string
   - char --> 24-character alphanumeric string
   - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^2]. This wordfile is located in ```custom_components/unfi_wifi```
-  - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
+  - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, ```xkcd``` only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
 
   ```yaml
     action: unifi_wifi.hotspot_password

@@ -136,7 +136,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         response = await self._request(session, 'post', path, **kwargs)
 
         # Create a cookie from the current session response and add it to the headers
-        headers['Cookie'] = ', '.join(response.headers.getall('Set-Cookie'))
+        headers['Cookie'] = '; '.join(response.headers.getall('Set-Cookie'))
         if self._unifi_os:
             headers[UNIFI_CSRF_TOKEN] = response.headers.get(UNIFI_CSRF_TOKEN)
 
