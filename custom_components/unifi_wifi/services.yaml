@@ -162,7 +162,7 @@ hotspot_password:
         boolean:
     method:
       name: Method
-      description: char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word)
+      description: char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word)
       required: false
       example: "word"
       selector:
@@ -174,13 +174,14 @@ hotspot_password:
           mode: dropdown
     delimiter:
       name: Delimiter
-      description: Use spaces, dashes, or underscores to separate passphrase words [xkcd & word] (default=dash)
+      description: Character to separate passphrase words [xkcd & word] (default=dash)
       required: false
       example: "space"
       selector:
         select:
           options:
             - "dash"
+            - "pipe"
             - "space"
             - "underscore"
             - "none"
@@ -250,7 +251,7 @@ wlan_password:
         boolean:
     method:
       name: Method
-      description: char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word)
+      description: char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word)
       required: false
       example: "word"
       selector:
@@ -262,13 +263,14 @@ wlan_password:
           mode: dropdown
     delimiter:
       name: Delimiter
-      description: Use spaces, dashes, or underscores to separate passphrase words [xkcd & word] (default=dash)
+      description: Character to separate passphrase words [xkcd & word] (default=dash)
       required: false
       example: "space"
       selector:
         select:
           options:
             - "dash"
+            - "pipe"
             - "space"
             - "underscore"
             - "none"

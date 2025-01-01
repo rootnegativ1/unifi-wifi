@@ -203,7 +203,7 @@ unifi_wifi:
   | coordinator | no | coordinator whose hotspot password you want to change. Limited to one coordinator per action |
   | password | yes | user-provided password (min=8, max=63). If provided, this will override any random settings. |
   | random | yes | Should a randomly generated password be created (default=True) |
-  | method | yes | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word) |
+  | method | yes | char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word) |
   | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd & word] (default=dash) |
   | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
   | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
@@ -228,7 +228,7 @@ unifi_wifi:
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | password | yes | user-provided password (min=8, max=63). If provided, this will override any random settings. |
   | random | yes | Should a randomly generated password be created (default=True) |
-  | method | yes | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word) |
+  | method | yes | char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word) |
   | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd & word] (default=dash) |
   | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
   | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |

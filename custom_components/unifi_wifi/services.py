@@ -204,13 +204,15 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         char_count = call.data.get(CONF_CHAR_COUNT)
         if delimiter_raw == 'dash':
             delimiter = '-'
+        elif delimiter_raw == 'pipe':
+            delimiter = '|'
         elif delimiter_raw == 'space':
             delimiter = ' '
         elif delimiter_raw == 'underscore':
             delimiter = '_'
         else:
             delimiter = ''
-        
+
         password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
 
         return password
