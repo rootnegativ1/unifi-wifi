@@ -162,7 +162,7 @@ hotspot_password:
         boolean:
     method:
       name: Method
-      description: char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word)
+      description: char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word)
       required: false
       example: "word"
       selector:
@@ -171,6 +171,7 @@ hotspot_password:
             - "char"
             - "word"
             - "xkcd"
+            - "rainbow"
           mode: dropdown
     delimiter:
       name: Delimiter
@@ -251,7 +252,7 @@ wlan_password:
         boolean:
     method:
       name: Method
-      description: char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word)
+      description: char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word)
       required: false
       example: "word"
       selector:
@@ -260,6 +261,7 @@ wlan_password:
             - "char"
             - "word"
             - "xkcd"
+            - "rainbow"
           mode: dropdown
     delimiter:
       name: Delimiter
