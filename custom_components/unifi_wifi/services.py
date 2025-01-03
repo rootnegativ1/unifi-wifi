@@ -21,7 +21,6 @@ from homeassistant.helpers import config_validation as cv, entity_registry
 from homeassistant.helpers import service
 from homeassistant.helpers.service import async_register_admin_service
 from homeassistant.helpers.typing import ConfigType
-from typing import List # required for type hinting (function annotation) using List
 from .const import (
     DOMAIN,
     CONF_CHAR_COUNT,
@@ -173,7 +172,7 @@ SERVICE_WLAN_PASSWORD_SCHEMA = vol.All(
 )
 
 
-async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoordinator]) -> bool:
+async def register_services(hass: HomeAssistant, coordinators: list[UnifiWifiCoordinator]) -> bool:
 
     def _coordinator_index(_coordinator: str):
         """Find the index of a specific coordinator."""
@@ -218,7 +217,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         return password
 
 
-    async def _valid_entity_states(_target: str | List[str], _context: Context) -> List[str]:
+    async def _valid_entity_states(_target: str | list[str], _context: Context) -> list[str]:
         """Return a list of states filtered by entity IDs belonging to the platform."""
         try:
             entities = _target[CONF_ENTITY_ID]
@@ -369,7 +368,7 @@ async def register_services(hass: HomeAssistant, coordinators: List[UnifiWifiCoo
         await _change_password(call, True)
 
 
-    async def _ssid_requests(states: List[str], key: str, value: str, force: bool = False):
+    async def _ssid_requests(states: list[str], key: str, value: str, force: bool = False):
         """Used to make SSID level API changes."""
         """This does not work (yet?) for PPSK level changes."""
 
