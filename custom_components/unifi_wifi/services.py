@@ -46,8 +46,6 @@ from .const import (
 from .coordinator import UnifiWifiCoordinator
 from . import password as pw
 
-SERVICE_CUSTOM_PASSWORD = 'custom_password' # DEPRECATED
-SERVICE_RANDOM_PASSWORD = 'random_password' # DEPRECATED
 SERVICE_ENABLE_WLAN = 'enable_wlan'
 SERVICE_HIDE_SSID = 'hide_ssid'
 SERVICE_HOTSPOT_PASSWORD = 'hotspot_password'
@@ -114,36 +112,6 @@ PASSWORD_SCHEMA = vol.Schema({
         vol.Coerce(int), vol.Range(min=8, max=63)
     )
 })
-
-# DEPRECATED
-SERVICE_CUSTOM_PASSWORD_SCHEMA = vol.Schema({
-    vol.Required(CONF_TARGET): TARGET_SCHEMA,
-    vol.Required(CONF_PASSWORD): vol.All(
-        cv.string, vol.Length(min=8, max=63), _is_ascii
-    ),
-})
-
-# DEPRECATED
-SERVICE_RANDOM_PASSWORD_SCHEMA = vol.All(
-    vol.Schema({
-        vol.Required(CONF_TARGET): TARGET_SCHEMA,
-        vol.Optional(CONF_METHOD,default='word'): vol.In(CONF_METHOD_TYPES),
-        vol.Optional(CONF_DELIMITER, default='dash'): vol.In(CONF_DELIMITER_TYPES),
-        vol.Optional(CONF_MIN_LENGTH, default=5): vol.All(
-            vol.Coerce(int), vol.Range(min=3, max=9)
-        ),
-        vol.Optional(CONF_MAX_LENGTH, default=8): vol.All(
-            vol.Coerce(int), vol.Range(min=3, max=9)
-        ),
-        vol.Optional(CONF_WORD_COUNT, default=4): vol.All(
-            vol.Coerce(int), vol.Range(min=3, max=6)
-        ),
-        vol.Optional(CONF_CHAR_COUNT, default=24): vol.All(
-            vol.Coerce(int), vol.Range(min=8, max=63)
-        ),
-    }),
-    _check_word_lengths
-)
 
 SERVICE_ENABLE_WLAN_SCHEMA = vol.Schema({
     vol.Required(CONF_TARGET): TARGET_SCHEMA,
@@ -255,117 +223,6 @@ async def register_services(hass: HomeAssistant, coordinators: list[UnifiWifiCoo
 
         if EXTRA_DEBUG: _LOGGER.debug("valid_states: %s", states)
         return states
-
-    # DEPRECATED
-    async def _change_password(call: ServiceCall, _random: bool = False):
-        """Send custom or randomly generated password to a coordinator."""
-        states = await _valid_entity_states(call.data.get(CONF_TARGET), call.context)
-
-        if not _random:
-            password = call.data.get(CONF_PASSWORD)
-
-        # create list of wlan configurations to be sent to controllers
-        requests = []
-        for entity in states:
-            idcoord = _coordinator_index(entity.attributes.get(CONF_COORDINATOR))
-            coordinator = coordinators[idcoord]
-            ssid = entity.attributes.get(CONF_SSID)
-
-            if _random:
-                password = await _random_password(call)
-
-            ppsk = bool(entity.attributes.get(CONF_PPSK))
-            if ppsk:
-                keys = coordinator.wlanconf[_ssid_index(idcoord, ssid)][UNIFI_PRESHARED_KEYS]
-                network_id = entity.attributes.get(UNIFI_NETWORKCONF_ID)
-                idkey = [x[UNIFI_NETWORKCONF_ID] for x in keys].index(network_id)
-
-            try:
-                idrequestcoord = [x[CONF_COORDINATOR] for x in requests].index(entity.attributes.get(CONF_COORDINATOR))
-                if EXTRA_DEBUG: _LOGGER.debug("found coordinator entry in requests list")
-                try:
-                    idrequestssid = [y[CONF_SSID] for y in requests[idrequestcoord][CONF_DATA]].index(entity.attributes.get(CONF_SSID))
-                    if EXTRA_DEBUG: _LOGGER.debug("found ssid entry in requests list")
-                    if ppsk:
-                        # check for unique ppsk passwords on a found ssid request
-                        if password in [x[CONF_PASSWORD] for x in requests[idrequestcoord][CONF_DATA][idrequestssid][UNIFI_PRESHARED_KEYS]]:
-                            raise IntegrationError("Networks on the same PPSK-enabled SSID cannot have the same password")
-
-                        requests[idrequestcoord][CONF_DATA][idrequestssid][UNIFI_PRESHARED_KEYS][idkey] = {
-                            CONF_PASSWORD: password,
-                            UNIFI_NETWORKCONF_ID: network_id
-                        }
-                        if EXTRA_DEBUG: _LOGGER.debug("ppsk entry updated in requests list")
-                    else:
-                        # this condition should not be possible unless somehow two or more entities
-                        # with the same coordinator AND ssid AND no private preshared keys
-                        # are created and selected
-                        requests[idrequestcoord][CONF_DATA][idrequestssid][CONF_PASSWORD] = password
-                except ValueError:
-                    if ppsk:
-                        keys[idkey] = {
-                            CONF_PASSWORD: password,
-                            UNIFI_NETWORKCONF_ID: network_id
-                        }
-                        entry = {
-                            CONF_SSID: ssid,
-                            UNIFI_PRESHARED_KEYS: keys
-                        }
-                    else:
-                        entry = {
-                            CONF_SSID: ssid,
-                            CONF_PASSWORD: password
-                        }
-                    requests[idrequestcoord][CONF_DATA].append(entry)
-                    if EXTRA_DEBUG: _LOGGER.debug("new ssid entry created in requests list")
-            except ValueError:
-                if ppsk:
-                    keys[idkey] = {
-                        CONF_PASSWORD: password,
-                        UNIFI_NETWORKCONF_ID: network_id
-                    }
-                    entry = {
-                        CONF_COORDINATOR: entity.attributes.get(CONF_COORDINATOR),
-                        CONF_DATA: [{
-                            CONF_SSID: ssid,
-                            UNIFI_PRESHARED_KEYS: keys
-                        }]
-                    }
-                else:
-                    entry = {
-                        CONF_COORDINATOR: entity.attributes.get(CONF_COORDINATOR),
-                        CONF_DATA: [{
-                            CONF_SSID: ssid,
-                            CONF_PASSWORD: password
-                        }]
-                    }
-                requests.append(entry)
-                if EXTRA_DEBUG: _LOGGER.debug("new coordinator entry created in requests list")
-
-        # send wlanconf change requests to controllers
-        if EXTRA_DEBUG: _LOGGER.debug("requests: %s", requests)
-        for request in requests:
-            idcoord = _coordinator_index(request[CONF_COORDINATOR])
-            coordinator = coordinators[idcoord]
-            for r in request[CONF_DATA]:
-                try:
-                    payload = {UNIFI_PRESHARED_KEYS: r[UNIFI_PRESHARED_KEYS]}
-                except:
-                    payload = {UNIFI_X_PASSPHRASE: r[CONF_PASSWORD]}
-                if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", r[CONF_SSID], payload)
-                await coordinator.set_wlanconf(r[CONF_SSID], payload, False)
-
-    # DEPRECATED
-    async def custom_password_service(call: ServiceCall):
-        """Set a custom password."""
-        _LOGGER.warn("unifi_wifi.custom_password service has been deprecated. This will be removed in a later release. Please use unifi_wifi.wlan_password service instead.")
-        await _change_password(call, False)
-
-    # DEPRECATED
-    async def random_password_service(call: ServiceCall):
-        """Set a randomized password."""
-        _LOGGER.warn("unifi_wifi.random_password service has been deprecated. This will be removed in a later release. Please use unifi_wifi.wlan_password service instead.")
-        await _change_password(call, True)
 
 
     async def _ssid_requests(states: list[str], key: str, value: str, force: bool = False):
@@ -551,24 +408,6 @@ async def register_services(hass: HomeAssistant, coordinators: list[UnifiWifiCoo
                 if EXTRA_DEBUG: _LOGGER.debug("ssid %s with payload %s", r[CONF_SSID], payload)
                 await coordinator.set_wlanconf(r[CONF_SSID], payload, False)
 
-
-    # DEPRECATED
-    async_register_admin_service(
-        hass,
-        DOMAIN,
-        SERVICE_CUSTOM_PASSWORD,
-        custom_password_service,
-        schema=SERVICE_CUSTOM_PASSWORD_SCHEMA
-    )
-
-    # DEPRECATED
-    async_register_admin_service(
-        hass,
-        DOMAIN,
-        SERVICE_RANDOM_PASSWORD,
-        random_password_service,
-        schema=SERVICE_RANDOM_PASSWORD_SCHEMA
-    )
 
     async_register_admin_service(
         hass,
