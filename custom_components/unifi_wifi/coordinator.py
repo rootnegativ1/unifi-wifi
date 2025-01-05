@@ -95,20 +95,14 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
 
     async def _request(self, session: aiohttp.ClientSession, method: str, path: str, **kwargs) -> aiohttp.ClientResponse:
         """Make a request."""
-        headers = kwargs.pop("headers", None) # remove headers from kwargs
-        if headers is None:
-            headers = {}
-        else:
-            headers = dict(headers)
 
         fullpath = f"https://{self._base_url}:{self._port}{path}"
-        response = await session.request(method, fullpath, **kwargs, headers=headers)
+        response = await session.request(method, fullpath, **kwargs)
 
         _LOGGER.debug("_request method %s on path %s (status %s)", method, fullpath, response.status)
 
         if EXTRA_DEBUG:
             _LOGGER.debug("_request kwargs: %s", kwargs)
-            _LOGGER.debug("_request headers: %s", headers)
             _LOGGER.debug("%s response: %s", path, await response.json())
             _LOGGER.debug("%s response cookies: %s", path, response.cookies)
             _LOGGER.debug("%s response headers: %s", path, response.headers)
