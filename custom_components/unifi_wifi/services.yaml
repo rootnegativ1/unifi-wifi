@@ -67,6 +67,7 @@ hotspot_password:
       selector:
         boolean:
     random_settings:
+      name: Random Settings
       collapsed: true
       fields:
         method:
@@ -153,6 +154,7 @@ wlan_password:
       selector:
         boolean:
     random_settings:
+      name: Random Settings
       collapsed: true
       fields:
         method:
