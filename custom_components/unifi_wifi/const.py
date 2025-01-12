@@ -7,7 +7,6 @@ CONF_CHAR_COUNT = 'char_count'
 CONF_COORDINATOR = 'coordinator'
 CONF_DATA = 'data'
 CONF_DELIMITER = 'delimiter'
-CONF_DELIMITER_TYPES = ['dash','pipe','space','underscore','none']
 CONF_FILE_OUTPUT = 'file_output'
 CONF_FILL_COLOR = 'fill_color'
 CONF_FORCE_PROVISION = 'force_provision'

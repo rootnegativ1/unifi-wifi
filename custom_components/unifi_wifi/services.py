@@ -27,7 +27,6 @@ from .const import (
     CONF_COORDINATOR,
     CONF_DATA,
     CONF_DELIMITER,
-    CONF_DELIMITER_TYPES,
     CONF_HIDE_SSID,
     CONF_MAX_LENGTH,
     CONF_METHOD_TYPES,
@@ -98,7 +97,9 @@ PASSWORD_SCHEMA = vol.Schema({
     ),
     vol.Optional(CONF_RANDOM, default=True): cv.boolean,
     vol.Optional(CONF_METHOD, default='word'): vol.In(CONF_METHOD_TYPES),
-    vol.Optional(CONF_DELIMITER, default='dash'): vol.In(CONF_DELIMITER_TYPES),
+    vol.Optional(CONF_DELIMITER, default=''): vol.All(
+        cv.string, vol.Length(min=0, max=1), _is_ascii
+    ),
     vol.Optional(CONF_MIN_LENGTH, default=5): vol.All(
         vol.Coerce(int), vol.Range(min=3, max=9)
     ),
@@ -164,21 +165,11 @@ async def register_services(hass: HomeAssistant, coordinators: list[UnifiWifiCoo
     async def _random_password(call: ServiceCall) -> str:
         """SOMETHING DESCRIPTIVE."""
         method = call.data.get(CONF_METHOD)
-        delimiter_raw = call.data.get(CONF_DELIMITER)
+        delimiter = call.data.get(CONF_DELIMITER)
         min_length = call.data.get(CONF_MIN_LENGTH)
         max_length = call.data.get(CONF_MAX_LENGTH)
         word_count = call.data.get(CONF_WORD_COUNT)
         char_count = call.data.get(CONF_CHAR_COUNT)
-        if delimiter_raw == 'dash':
-            delimiter = '-'
-        elif delimiter_raw == 'pipe':
-            delimiter = '|'
-        elif delimiter_raw == 'space':
-            delimiter = ' '
-        elif delimiter_raw == 'underscore':
-            delimiter = '_'
-        else:
-            delimiter = ''
 
         password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
 
@@ -298,13 +289,13 @@ async def register_services(hass: HomeAssistant, coordinators: list[UnifiWifiCoo
         target = call.data.get(CONF_COORDINATOR)
         idcoord = _coordinator_index(target)
         coordinator = coordinators[idcoord]
-        
+
         random = call.data.get(CONF_RANDOM)
-        if random:
-            password = await _random_password(call)
-        else:
+        if not random:
             password = call.data.get(CONF_PASSWORD)
-        
+        else:
+            password = await _random_password(call)
+
         payload = {"password_enabled": True, UNIFI_X_PASSWORD: password}
         await coordinator.set_restsetting("guest_access", payload, False)
 
