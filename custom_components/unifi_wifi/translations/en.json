@@ -1,0 +1,129 @@
+{
+  "title": "Unifi Wifi",
+  "services": {
+    "enable_wlan": {
+      "name": "Enable/Disable WLANs",
+      "description": "Enable (or disable) a specific WLAN on a UniFi network",
+      "fields": {
+        "target": {
+          "name": "Target",
+          "description": "Wireless network(s) you want to enable (disable)"
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": "Set the enable state"
+        }
+      }
+    },
+    "hide_ssid": {
+      "name": "Hide SSIDs",
+      "description": "Enable (or disable) a hiding specific WLAN on a UniFi network",
+      "fields": {
+        "target": {
+          "name": "Target",
+          "description": "Wireless network(s) you want to enable (disable)"
+        },
+        "hide_ssid": {
+          "name": "Hide SSID",
+          "description": "Set the hide state"
+        }
+      }
+    },
+    "hotspot_password": {
+      "name": "Hotspot Password",
+      "description": "Change guest hotspot password on UniFi network",
+      "fields": {
+        "coordinator": {
+          "name": "Coordinator",
+          "description": "coordinator whose hotspot password you want to change. Limited to one coordinator per service call."
+        },
+        "password": {
+          "name": "Password",
+          "description": "User-provided password (min=8, max=63)"
+        },
+        "random": {
+          "name": "Random",
+          "description": "Should a randomly generated password be created (default=True). If disabled, a user-provided password must be provided."
+        },
+        "method": {
+          "name": "Method",
+          "description": "char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word)"
+        },
+        "delimiter": {
+          "name": "Delimiter",
+          "description": "Character to separate passphrase words [xkcd & word] (default is no delimiter)"
+        },
+        "min_length": {
+          "name": "Min Length",
+          "description": "Minimum word length [xkcd only] (default=5, min=3, max=9)"
+        },
+        "max_length": {
+          "name": "Max Length",
+          "description": "Maximum word length [xkcd only] (default=8, min=3, max=9)"
+        },
+        "word_count": {
+          "name": "Word Count",
+          "description": "Number of words to generate [xkcd & word] (default=4, min=3, max=6)"
+        },
+        "char_count": {
+          "name": "Char Count",
+          "description": "Number of alphanumeric characters to generate [char only] (default=24, min=8, max=63)"
+        }
+      },
+      "sections": {
+        "random_settings": {
+          "name": "Random Settings",
+          "description": "Configuration options for randomly generated passwords"
+        }
+      }
+    },
+    "wlan_password": {
+      "name": "WLAN Password",
+      "description": "Change WLAN password on UniFi network",
+      "fields": {
+        "target": {
+          "name": "Target",
+          "description": "Wireless network(s) you want to enable (disable)"
+        },
+        "password": {
+          "name": "Password",
+          "description": "User-provided password (min=8, max=63)"
+        },
+        "random": {
+          "name": "Random",
+          "description": "Should a randomly generated password be created (default=True). If disabled, a user-provided password must be provided."
+        },
+        "method": {
+          "name": "Method",
+          "description": "char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word)"
+        },
+        "delimiter": {
+          "name": "Delimiter",
+          "description": "Character to separate passphrase words [xkcd & word] (default is no delimiter)"
+        },
+        "min_length": {
+          "name": "Min Length",
+          "description": "Minimum word length [xkcd only] (default=5, min=3, max=9)"
+        },
+        "max_length": {
+          "name": "Max Length",
+          "description": "Maximum word length [xkcd only] (default=8, min=3, max=9)"
+        },
+        "word_count": {
+          "name": "Word Count",
+          "description": "Number of words to generate [xkcd & word] (default=4, min=3, max=6)"
+        },
+        "char_count": {
+          "name": "Char Count",
+          "description": "Number of alphanumeric characters to generate [char only] (default=24, min=8, max=63)"
+        }
+      },
+      "sections": {
+        "random_settings": {
+          "name": "Random Settings",
+          "description": "Configuration options for randomly generated passwords"
+        }
+      }
+    }
+  }
+}

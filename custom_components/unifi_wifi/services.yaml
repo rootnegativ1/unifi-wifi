@@ -1,13 +1,6 @@
-# https://developers.home-assistant.io/docs/dev_101_services
-# https://www.home-assistant.io/docs/blueprint/selectors
-
 enable_wlan:
-  name: Enable/Disable WLANs
-  description: Enable (or disable) a specific WLAN on a UniFi network
   fields:
     target:
-      name: Target
-      description: Wireless network(s) you want to enable (disable)
       required: true
       selector:
         target:
@@ -15,20 +8,14 @@ enable_wlan:
             integration: unifi_wifi
             domain: image
     enabled:
-      name: Enabled
-      description: Set the enable state
       required: true
       example: true
       selector:
         boolean:
 
 hide_ssid:
-  name: Hide SSIDs
-  description: Enable (or disable) a hiding specific WLAN on a UniFi network
   fields:
     target:
-      name: Target
-      description: Wireless network(s) you want to hide (broadcast)
       required: true
       selector:
         target:
@@ -36,43 +23,30 @@ hide_ssid:
             integration: unifi_wifi
             domain: image
     hide_ssid:
-      name: Hide SSID
-      description: Set the hide state
       required: true
       example: false
       selector:
         boolean:
 
 hotspot_password:
-  name: Hotspot Password
-  description: Change guest hotspot password on UniFi network
   fields:
     coordinator:
-      name: Coordinator
-      description: coordinator whose hotspot password you want to change. Limited to one coordinator per service call.
       required: true
       selector:
         text:
     password:
-      name: Password
-      description: User-provided password (min=8, max=63)
       required: false
       selector:
         text:
     random:
-      name: Random
-      description: Should a randomly generated password be created (default=True). If disabled, a user-provided password must be provided.
       required: false
       default: true
       selector:
         boolean:
     random_settings:
-      name: Random Settings
       collapsed: true
       fields:
         method:
-          name: Method
-          description: char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word)
           required: false
           example: "word"
           selector:
@@ -84,15 +58,11 @@ hotspot_password:
                 - "rainbow"
               mode: dropdown
         delimiter:
-          name: Delimiter
-          description: Character to separate passphrase words [xkcd & word] (default is no delimiter)
           required: false
           example: "|"
           selector:
             text:
         min_length:
-          name: Min Length
-          description: Minimum word length [xkcd only] (default=5, min=3, max=9)
           required: false
           example: 5
           selector:
@@ -100,8 +70,6 @@ hotspot_password:
               min: 3
               max: 9
         max_length:
-          name: Max Length
-          description: Maximum word length [xkcd only] (default=8, min=3, max=9)
           required: false
           example: 8
           selector:
@@ -109,8 +77,6 @@ hotspot_password:
               min: 3
               max: 9
         word_count:
-          name: Word Count
-          description: Number of words to generate [xkcd & word] (default=4, min=3, max=6)
           required: false
           example: 4
           selector:
@@ -118,8 +84,6 @@ hotspot_password:
               min: 3
               max: 6
         char_count:
-          name: Character Count
-          description: Number of alphanumeric characters to generate [char only] (default=24, min=8, max=63)
           required: false
           example: 24
           selector:
@@ -128,12 +92,8 @@ hotspot_password:
               max: 63
 
 wlan_password:
-  name: Wlan Password
-  description: Change WLAN password on UniFi network
   fields:
     target:
-      name: Target
-      description: Wireless network(s) whose password you want to change
       required: true
       selector:
         target:
@@ -141,25 +101,18 @@ wlan_password:
             integration: unifi_wifi
             domain: image
     password:
-      name: Password
-      description: user-provided password (min=8, max=63)
       required: false
       selector:
         text:
     random:
-      name: Random
-      description: Should a randomly generated password be created (default=True). If disabled, a user-provided password must be provided.
       required: false
       default: true
       selector:
         boolean:
     random_settings:
-      name: Random Settings
       collapsed: true
       fields:
         method:
-          name: Method
-          description: char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word)
           required: false
           example: "word"
           selector:
@@ -171,15 +124,11 @@ wlan_password:
                 - "rainbow"
               mode: dropdown
         delimiter:
-          name: Delimiter
-          description: Character to separate passphrase words [xkcd & word] (default is no delimiter)
           required: false
           example: "|"
           selector:
             text:
         min_length:
-          name: Min Length
-          description: Minimum word length [xkcd only] (default=5, min=3, max=9)
           required: false
           example: 5
           selector:
@@ -187,8 +136,6 @@ wlan_password:
               min: 3
               max: 9
         max_length:
-          name: Max Length
-          description: Maximum word length [xkcd only] (default=8, min=3, max=9)
           required: false
           example: 8
           selector:
@@ -196,8 +143,6 @@ wlan_password:
               min: 3
               max: 9
         word_count:
-          name: Word Count
-          description: Number of words to generate [xkcd & word] (default=4, min=3, max=6)
           required: false
           example: 4
           selector:
@@ -205,8 +150,6 @@ wlan_password:
               min: 3
               max: 6
         char_count:
-          name: Character Count
-          description: Number of alphanumeric characters to generate [char only] (default=24, min=8, max=63)
           required: false
           example: 24
           selector:
