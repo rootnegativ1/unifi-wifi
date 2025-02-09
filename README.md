@@ -130,7 +130,7 @@ unifi_wifi:
   |---|---|---|
   | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
   | method | yes | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word) |
-  | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd & word] (default=dash) |
+  | delimiter | yes | use any ASCII (single) character to separate passphrase words [xkcd & word] (default=no delimiter) |
   | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
   | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
   | word_count | yes | number of words to generate [xkcd & word] (default=4, min=3, max=6) |
@@ -203,7 +203,7 @@ unifi_wifi:
   | password | yes | user-provided password (min=8, max=63). If provided, this will override any random settings. |
   | random | yes | Should a randomly generated password be created (default=True) |
   | method | yes | char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word) |
-  | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd & word] (default=dash) |
+  | delimiter | yes | use any ASCII (single) character to separate passphrase words [xkcd & word] (default=no delimiter) |
   | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
   | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
   | word_count | yes | number of words to generate [xkcd & word] (default=4, min=3, max=6) |
@@ -228,7 +228,7 @@ unifi_wifi:
   | password | yes | user-provided password (min=8, max=63). If provided, this will override any random settings. |
   | random | yes | Should a randomly generated password be created (default=True) |
   | method | yes | char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word) |
-  | delimiter | yes | use spaces or dashes to separate passphrase words [xkcd & word] (default=dash) |
+  | delimiter | yes | use any ASCII (single) character to separate passphrase words [xkcd & word] (default=no delimiter) |
   | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
   | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
   | word_count | yes | number of words to generate [xkcd & word] (default=4, min=3, max=6) |
