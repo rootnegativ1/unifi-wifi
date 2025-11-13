@@ -229,24 +229,17 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         if (
             last_state := await self.async_get_last_state()
         ) and last_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
-            #self._state = last_state.state
             # restore self._attr_image_last_updated since image uses it for the state
-            #   and must be set to a datetime object
+            # and must be set to a datetime object
             self._attr_image_last_updated = parse_datetime(last_state.state)
 
+            # Sometimes on reboots, and otherwise, the image entity is (re-)added to HASS
+            # If these attributes are not restored, then a timestamp update may be triggered
+            # or the WPA_MODE defaults to WPA3
             for attr in [
-                # CONF_ENABLED,
-                # CONF_HIDE_SSID,
-                # CONF_COORDINATOR,
-                # CONF_SITE,
-                # CONF_SSID,
-                # CONF_PPSK,
-                # UNIFI_ID,
-                # CONF_PASSWORD,
-                # CONF_QR_TEXT, 
+                CONF_PASSWORD,
                 CONF_TIMESTAMP,
-                # UNIFI_NETWORKCONF_ID,
-                # CONF_NETWORK_NAME
+                CONF_WPA_MODE
             ]:
                 if attr in last_state.attributes:
                     self._attributes[attr] = last_state.attributes[attr]
