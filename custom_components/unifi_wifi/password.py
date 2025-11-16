@@ -9,7 +9,7 @@ COLOR_FILE= '/config/custom_components/unifi_wifi/color_wordlist.txt'
 NOUN_FILE = '/config/custom_components/unifi_wifi/noun_wordlist.txt'
 
 
-def create(_method: str, _delimiter: str, _min_length: int, _max_length: int, _word_count: int, _char_count: int):
+def create(_method: str, _punctuation: bool, _delimiter: str, _min_length: int, _max_length: int, _word_count: int, _char_count: int):
     # https://github.com/redacted/XKCD-password-generator#using-xkcdpass-as-an-imported-module
     if _method == 'xkcd':
         # xp.locate_wordfile() defaults to a looking for eff_long contained in xkcdpass python module
@@ -28,7 +28,11 @@ def create(_method: str, _delimiter: str, _min_length: int, _max_length: int, _w
 
     # https://docs.python.org/3/library/secrets.html#recipes-and-best-practices
     elif _method == 'char':
-        alphabet = string.ascii_letters + string.digits
+        if _punctuation:
+            alphabet = string.ascii_letters + string.digits + string.punctuation
+        else:
+            alphabet = string.ascii_letters + string.digits
+
         x = ''.join(secrets.choice(alphabet) for i in range(_char_count))
 
     elif _method == 'rainbow':

@@ -49,6 +49,10 @@
           "name": "Method",
           "description": "char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word)"
         },
+        "punctuation": {
+          "name": "Punctuation",
+          "description": "allow the use of puncutation ASCII characters [char only] (default=False)"
+        },
         "delimiter": {
           "name": "Delimiter",
           "description": "Character to separate passphrase words [xkcd & word] (default is no delimiter)"
@@ -96,6 +100,10 @@
         "method": {
           "name": "Method",
           "description": "char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word)"
+        },
+        "punctuation": {
+          "name": "Punctuation",
+          "description": "allow the use of puncutation ASCII characters [char only] (default=False)"
         },
         "delimiter": {
           "name": "Delimiter",

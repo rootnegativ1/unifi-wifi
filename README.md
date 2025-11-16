@@ -203,6 +203,7 @@ unifi_wifi:
   | password | yes | user-provided password (min=8, max=63). If provided, this will override any random settings. |
   | random | yes | Should a randomly generated password be created (default=True) |
   | method | yes | char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word) |
+  | punctuation | yes | allow the use of puncutation ASCII characters [char only] (default=False) |
   | delimiter | yes | use any ASCII (single) character to separate passphrase words [xkcd & word] (default=no delimiter) |
   | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
   | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
@@ -228,6 +229,7 @@ unifi_wifi:
   | password | yes | user-provided password (min=8, max=63). If provided, this will override any random settings. |
   | random | yes | Should a randomly generated password be created (default=True) |
   | method | yes | char = alphanumeric string (no delimiter); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated); rainbow = color + noun, salted (no delimiter) (default=word) |
+  | punctuation | yes | allow the use of puncutation ASCII characters [char only] (default=False) |
   | delimiter | yes | use any ASCII (single) character to separate passphrase words [xkcd & word] (default=no delimiter) |
   | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
   | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
