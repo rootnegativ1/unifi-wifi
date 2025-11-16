@@ -32,6 +32,7 @@ from .const import (
     CONF_METHOD_TYPES,
     CONF_MIN_LENGTH,
     CONF_PPSK,
+    CONF_PUNCTUATION,
     CONF_RANDOM,
     CONF_SSID,
     CONF_WORD_COUNT,
@@ -97,6 +98,7 @@ PASSWORD_SCHEMA = vol.Schema({
     ),
     vol.Optional(CONF_RANDOM, default=True): cv.boolean,
     vol.Optional(CONF_METHOD, default='word'): vol.In(CONF_METHOD_TYPES),
+    vol.Optional(CONF_PUNCTUATION, default=False): cv.boolean,
     vol.Optional(CONF_DELIMITER, default=''): vol.All(
         cv.string, vol.Length(min=0, max=1), _is_ascii
     ),
@@ -165,13 +167,14 @@ async def register_services(hass: HomeAssistant, coordinators: list[UnifiWifiCoo
     async def _random_password(call: ServiceCall) -> str:
         """SOMETHING DESCRIPTIVE."""
         method = call.data.get(CONF_METHOD)
+        punctuation = call.data.get(CONF_PUNCTUATION)
         delimiter = call.data.get(CONF_DELIMITER)
         min_length = call.data.get(CONF_MIN_LENGTH)
         max_length = call.data.get(CONF_MAX_LENGTH)
         word_count = call.data.get(CONF_WORD_COUNT)
         char_count = call.data.get(CONF_CHAR_COUNT)
 
-        password = await hass.async_add_executor_job(pw.create, method, delimiter, min_length, max_length, word_count, char_count)
+        password = await hass.async_add_executor_job(pw.create, method, punctuation, delimiter, min_length, max_length, word_count, char_count)
 
         return password
 
