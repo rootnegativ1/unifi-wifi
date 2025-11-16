@@ -102,58 +102,6 @@ unifi_wifi:
 
 ## Actions
 
-### ```unifi_wifi.custom_password```
-#### *DEPRECRATED*
-  | Action data attribute | Optional | Description |
-  |---|---|---|
-  | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
-  | password | no | user-provided password |
-
-  Change SSID password(s) on UniFi network to a custom string. New passwords must contain only ASCII characters and be between 8 and 63 characters in length.
-
-  ```yaml
-    action: unifi_wifi.custom_password
-    data:
-      target:
-        entity_id:
-          - image.myhouse_guest_wifi
-          - image.myhouse_testnetworkppsk_guest_wifi
-      password: thisISaTesT
-  ```
-  
-  > [!NOTE]
-  > *If you try setting private preshared keys on the same SSID to the same password, ~~only the first VLAN (alphabetically) will have its password changed~~ the integration will create an error warning the user duplicate passwords are not allowed on the same SSID.*
-
-### ```unifi_wifi.random_password```
-#### *DEPRECRATED*
-  | Action data attribute | Optional | Description |
-  |---|---|---|
-  | target | no | image entity of wireless network whose password you want to change. Multiple entities are possible using the ```entity_id``` key. |
-  | method | yes | char = alphanumeric string (no spaces); word = diceware passphrase (delimiter separated); xkcd = diceware passphrase using XKCD generator (delimiter separated) (default=word) |
-  | delimiter | yes | use any ASCII (single) character to separate passphrase words [xkcd & word] (default=no delimiter) |
-  | min_length | yes | minimum word length [xkcd only] (default=5, min=3, max=9) |
-  | max_length | yes | maximum word length [xkcd only] (default=8, min=3, max=9) |
-  | word_count | yes | number of words to generate [xkcd & word] (default=4, min=3, max=6) |
-  | char_count | yes | number of alphanumeric characters to generate [char only] (default=24, min=8, max=63) |
-
-  Change SSID password on UniFi network to a randomly generated string
-  - char --> 24-character alphanumeric string
-  - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^2]. This wordfile is located in ```custom_components/unfi_wifi```
-  - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
-
-  ```yaml
-    action: unifi_wifi.random_password
-    data:
-      target:
-        entity_id:
-          - image.myhouse_guest_wifi
-          - image.myhouse_testnetworkppsk_guest_wifi
-      method: word
-  ```
-
-  > [!NOTE]
-  > *Randomizing multiple private preshared keys on the same SSID will result in multiple random passwords generated. In the unlikely event multiple randomly created passwords are identical, the integration will create an error and not complete the action.*
-
 ### ```unifi_wifi.enable_wlan```
   | Action data attribute | Optional | Description |
   |---|---|---|
@@ -241,6 +189,7 @@ unifi_wifi:
   - word --> 4-word string, generated from the [EFF large wordlist](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt) [^2]. This wordfile is located in ```custom_components/unfi_wifi```
   - xkcd --> 4-word string, generated using [xkcdpass](https://pypi.org/project/xkcdpass). By default, xkcdpass only has access to the same wordfile as ```word```. The benefit of xkcdpass is having control over the length of words chosen.
 
+  Generating multiple random passwords at once:
   ```yaml
     action: unifi_wifi.wlan_password
     data:
@@ -250,6 +199,23 @@ unifi_wifi:
           - image.myhouse_testnetworkppsk_guest_wifi
       method: word
   ```
+
+> [!NOTE]
+  > *Randomizing multiple private preshared keys on the same SSID will result in multiple random passwords generated. In the unlikely event multiple randomly created passwords are identical, the integration will create an error and not complete the action.*
+
+  Setting a custom password:
+  ```yaml
+    action: unifi_wifi.wlam_password
+    data:
+      target:
+        entity_id:
+          - image.myhouse_guest_wifi
+      password: thisISaTesT
+  ```
+
+> [!NOTE]
+  > *If you try setting private preshared keys on the same SSID to the same password, ~~only the first VLAN (alphabetically) will have its password changed~~ the integration will create an error warning the user duplicate passwords are not allowed on the same SSID.*
+
 
 ## Logging
 Debug logs can be enabled with the following in ```configuration.yaml```
