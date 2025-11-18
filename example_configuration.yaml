@@ -32,19 +32,18 @@ unifi_wifi:
     # custom_components.unifi_wifi: debug
 
 
-automation:
-  - id: 'guest_wifi_monthly_random_password'
-    alias: Guest Wifi
-    description: On the first of each month set a random password for the Guest Wifi
-    mode: single
-    triggers:
-      - trigger: template
-        value_template: '{{ now().day == 1 }}'
-    conditions: []
-    actions:
-      - action: button.press
-        target:
-          entity_id: button.guest_wifi_random
+recorder:
+  exclude:
+    entities:
+      - input_text.guest_wifi
+
+
+input_text:
+  guest_wifi:
+    name: guest_wifi
+    initial: ''
+    icon: mdi:form-textbox-password
+    mode: password
 
 
 template:
@@ -56,6 +55,7 @@ template:
           data:
             target: image.myhouse_guest_wifi
             method: word
+            delimiter: '-'
 
     - name: 'Guest Wifi Default'
       unique_id: guest_wifi_default
@@ -63,7 +63,7 @@ template:
         - action: unifi_wifi.wlan_password
           data:
             target: image.myhouse_guest_wifi
-            password: "SOME-KNOWN-DEFAULT"
+            password: 'SOME-KNOWN-DEFAULT'
 
     - name: 'Guest Wifi Custom'
       unique_id: guest_wifi_custom
@@ -77,7 +77,6 @@ template:
             entity_id: input_text.guest_wifi
             value: ''
 
-
   sensor:
     # https://community.home-assistant.io/t/unifi-network-number-of-active-clients-on-guest-ssid/377074
     # requires native UniFi Network integration https://www.home-assistant.io/integrations/unifi
@@ -89,9 +88,16 @@ template:
       #   {{ states.device_tracker | selectattr('state', 'eq', 'home') | selectattr('attributes.essid', 'eq', '<PPSK SSID HERE>') | selectattr('attributes.vlan', 'eq', <GUEST NETWORK VLAN ID HERE>) | list | count }}
 
 
-input_text:
-  guest_wifi:
-    name: guest_wifi
-    initial: ''
-    icon: mdi:form-textbox-password
-    mode: password
+automation:
+  - id: 'guest_wifi_monthly_random_password'
+    alias: Guest Wifi
+    description: On the first of each month set a random password for the Guest Wifi
+    mode: single
+    triggers:
+      - trigger: template
+        value_template: '{{ now().day == 1 }}'
+    conditions: []
+    actions:
+      - action: button.press
+        target:
+          entity_id: button.guest_wifi_random
