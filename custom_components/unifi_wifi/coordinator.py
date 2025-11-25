@@ -44,7 +44,7 @@ class ApiAuthError(IntegrationError):
 
 
 class ApiError(IntegrationError):
-    """Raised when a status code of 500 or greater is received."""
+    """Raised when a status code of 429 Too Many Requests or 500 (or greater) is received."""
 
 
 class UnifiWifiCoordinator(DataUpdateCoordinator):
@@ -91,7 +91,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             # and start a config flow with SOURCE_REAUTH (async_step_reauth)
             raise ConfigEntryAuthFailed from err
         except ApiError as err:
-            raise UpdateFailed(f"Error communicating with API: {err}") from err
+            raise UpdateFailed(f"Error communicating with API: {err}", retry_after=60) from err
 
     async def _request(self, session: aiohttp.ClientSession, method: str, path: str, **kwargs) -> aiohttp.ClientResponse:
         """Make a request."""
@@ -110,7 +110,7 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
         status = response.status
         if status == 401 or status == 403:
             raise ApiAuthError(f"{await response.json()}")
-        elif status >= 500:
+        elif status == 429 or status >= 500:
             raise ApiError(f"{await response.json()}")
         elif not response.ok: # catch all other non 2xx status codes
             response.raise_for_status()
