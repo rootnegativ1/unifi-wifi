@@ -125,16 +125,9 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
         idssid = self._ssid_index(ssid)
 
-        if EXTRA_DEBUG:
-            if bool(key):
-                idnetwork = [x[UNIFI_ID] for x in self.coordinator.networkconf].index(key[UNIFI_NETWORKCONF_ID])
-                name = slugify(f"{self.coordinator.name} {ssid} {self.coordinator.networkconf[idnetwork][UNIFI_NAME]} wifi")
-            else:
-                name = slugify(f"{self.coordinator.name} {ssid} wifi")
-            _LOGGER.debug("wlanconf for image.%s: [%s]", name, self.coordinator.wlanconf[idssid])
-
         dt = utcnow()
-        self._attributes = {
+
+        attributes = {
             CONF_ENABLED: self.coordinator.wlanconf[idssid][CONF_ENABLED],
             CONF_HIDE_SSID: self.coordinator.wlanconf[idssid][UNIFI_HIDE_SSID],
             CONF_COORDINATOR: self.coordinator.name,
@@ -156,19 +149,27 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             wpa_mode = 'WPA2/WPA3'
         else:
             wpa_mode = 'WPA2'
-        self._attributes[CONF_WPA_MODE] = wpa_mode
+        attributes[CONF_WPA_MODE] = wpa_mode
 
         if bool(key):
-            self._attributes[CONF_PASSWORD] = key[UNIFI_PASSWORD]
-            self._attributes[UNIFI_NETWORKCONF_ID] = key[UNIFI_NETWORKCONF_ID]
+            attributes[CONF_PPSK] = True
+            attributes[CONF_PASSWORD] = key[UNIFI_PASSWORD]
+            attributes[UNIFI_NETWORKCONF_ID] = key[UNIFI_NETWORKCONF_ID]
             idnetwork = [x[UNIFI_ID] for x in self.coordinator.networkconf].index(key[UNIFI_NETWORKCONF_ID])
-            self._attributes[CONF_NETWORK_NAME] = self.coordinator.networkconf[idnetwork][UNIFI_NAME]
-            self._attr_name = f"{self._attributes[CONF_COORDINATOR]} {ssid} {self._attributes[CONF_NETWORK_NAME]} wifi"
+            attributes[CONF_NETWORK_NAME] = self.coordinator.networkconf[idnetwork][UNIFI_NAME]
+            self._attr_name = f"{attributes[CONF_COORDINATOR]} {ssid} {attributes[CONF_NETWORK_NAME]} wifi"
         else:
-            self._attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
-            self._attr_name = f"{self._attributes[CONF_COORDINATOR]} {ssid} wifi"
+            attributes[CONF_PPSK] = False
+            attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
+            self._attr_name = f"{attributes[CONF_COORDINATOR]} {ssid} wifi"
 
-        self._attributes[CONF_PPSK] = bool(key)
+        if EXTRA_DEBUG:
+            _LOGGER.debug("wlanconf for image.%s: [%s]", slugify(self._attr_name), self.coordinator.wlanconf[idssid])
+
+        # Set entity attributes AFTER all values have been determined
+        # Any changes afterwards will not be updated until an entity update is triggered
+        self._attributes = attributes
+
         self._attr_unique_id = slugify(f"{DOMAIN}_{self._attr_name}_image")
         self._attr_content_type: str = "image/png"
         self._attr_image_last_updated = dt
