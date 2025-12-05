@@ -258,7 +258,18 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
     def _create_qr(self) -> None:
         """Create a QR code and save it as a PNG."""
-        if self._attributes['wpa_mode'] == 'WPA3':
+        idssid = self._ssid_index(self._attributes[CONF_SSID])
+
+        wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT]
+        wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
+        if wpa3_support and not wpa3_transition:
+            wpa_mode = 'WPA3'
+        elif wpa3_support and wpa3_transition:
+            wpa_mode = 'WPA2/WPA3'
+        else:
+            wpa_mode = 'WPA2'
+
+        if wpa_mode == 'WPA3':
             # add the WPA2/WPA3 transition mode disable flag
             # not sure if this is actually necessary
             qrtext = f"WIFI:T:WPA;R:1;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
