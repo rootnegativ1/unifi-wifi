@@ -41,6 +41,7 @@ hotspot_password:
     random:
       required: false
       default: true
+      example: true
       selector:
         boolean:
     random_settings:
@@ -59,7 +60,7 @@ hotspot_password:
               mode: dropdown
         punctuation:
           required: false
-          default: false
+          example: false
           selector:
             boolean:
         delimiter:
@@ -112,6 +113,7 @@ wlan_password:
     random:
       required: false
       default: true
+      example: true
       selector:
         boolean:
     random_settings:
@@ -130,7 +132,7 @@ wlan_password:
               mode: dropdown
         punctuation:
           required: false
-          default: false
+          example: false
           selector:
             boolean:
         delimiter:
