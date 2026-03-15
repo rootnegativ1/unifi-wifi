@@ -38,6 +38,7 @@ hotspot_password:
       required: false
       selector:
         text:
+          type: password
     random:
       required: false
       default: true
@@ -198,6 +199,7 @@ wlan_password:
       required: false
       selector:
         text:
+          type: password
     random:
       required: false
       default: true
