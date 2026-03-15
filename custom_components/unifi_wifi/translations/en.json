@@ -81,6 +81,28 @@
         }
       }
     },
+    "send_command": {
+      "name": "Send Command",
+      "description": "Send a command",
+      "fields": {
+        "coordinator": {
+          "name": "Coordinator",
+          "description": "coordinator to recieve the command. Limited to one coordinator per service call."
+        },
+		"manager": {
+          "name": "Manager",
+		  "description": ""
+        },
+		"command": {
+          "name": "Command",
+		  "description": ""
+        },
+		"data": {
+          "name": "Data",
+		  "description": ""
+        }
+      }
+    },
     "wlan_password": {
       "name": "WLAN Password",
       "description": "Change WLAN password on UniFi network",

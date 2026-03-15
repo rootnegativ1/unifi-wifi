@@ -3,6 +3,7 @@
     "enable_wlan": {"service": "mdi:toggle-switch"},
     "hide_ssid": {"service": "mdi:toggle-switch"},
     "hotspot_password": {"service": "mdi:account-group"},
+	"send_command": {"service": "mdi:arrow-right-bold-circle"},
     "wlan_password":  {"service": "mdi:form-textbox-password"}
   }
 }
