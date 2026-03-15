@@ -160,7 +160,6 @@ async def register_services(hass: HomeAssistant, coordinators: list[UnifiWifiCoo
     def _coordinator_index(_coordinator: str):
         """Find the index of a specific coordinator."""
         try:
-            #return [x[CONF_NAME] for x in coordinators].index(_coordinator)
             return [x.name for x in coordinators].index(_coordinator)
         except ValueError as err:
             raise ServiceValidationError(f"Coordinator {_coordinator} is not configured in YAML: {err}")
