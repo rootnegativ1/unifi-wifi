@@ -12,6 +12,7 @@ CONF_FILL_COLOR = 'fill_color'
 CONF_FORCE_PROVISION = 'force_provision'
 CONF_HIDE_SSID = 'hide_ssid'
 CONF_MANAGED_APS = 'managed_aps'
+CONF_MANAGER = 'manager'
 CONF_MAX_LENGTH = 'max_length'
 CONF_METHOD_TYPES = ['xkcd','word','char','rainbow']
 CONF_MIN_LENGTH = 'min_length'
@@ -32,8 +33,10 @@ CONF_WPA_MODE = 'wpa_mode'
 
 # Some of the below values are duplicates of CONF or homeassistant.const values
 # This is done to allow for changes in UniFi API keys
+UNIFI_COMMANDS = ['archive-all-alarms','add-site','delete-site','update-site','get-admins','move-device','delete-device','block-sta','unblock-sta','kick-sta','forget-sta','unauthorize-guest','adopt','restart','force-provision','power-cycle','speedtest','speedtest-status','set-locate','unset-locate','upgrade','upgrade-external','migrate','cancel-migrate','spectrum-scan','list-backups','delete-backup','backup','clear-dpi']
 UNIFI_HIDE_SSID = 'hide_ssid' # duplicate (CONF)
 UNIFI_ID = '_id'
+UNIFI_MANAGERS = ['evtmgt','sitemgr','stamgr','devmgr','backup','system','stat']
 UNIFI_NAME = 'name' # duplicate (const)
 UNIFI_NETWORKCONF_ID = 'networkconf_id'
 UNIFI_CSRF_TOKEN = 'X-CSRF-Token'

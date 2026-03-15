@@ -9,6 +9,7 @@ from homeassistant.auth.permissions.const import POLICY_CONTROL
 from homeassistant.const import (
     CONF_ENABLED,
     CONF_ENTITY_ID,
+    CONF_COMMAND,
     CONF_METHOD,
     CONF_NAME,
     CONF_PASSWORD,
@@ -28,6 +29,7 @@ from .const import (
     CONF_DATA,
     CONF_DELIMITER,
     CONF_HIDE_SSID,
+    CONF_MANAGER,
     CONF_MAX_LENGTH,
     CONF_METHOD_TYPES,
     CONF_MIN_LENGTH,
@@ -36,7 +38,9 @@ from .const import (
     CONF_RANDOM,
     CONF_SSID,
     CONF_WORD_COUNT,
+    UNIFI_COMMANDS,
     UNIFI_HIDE_SSID,
+    UNIFI_MANAGERS,
     UNIFI_NAME,
     UNIFI_NETWORKCONF_ID,
     UNIFI_X_PASSPHRASE,
@@ -49,6 +53,7 @@ from . import password as pw
 SERVICE_ENABLE_WLAN = 'enable_wlan'
 SERVICE_HIDE_SSID = 'hide_ssid'
 SERVICE_HOTSPOT_PASSWORD = 'hotspot_password'
+SERVICE_SEND_COMMAND = 'send_command'
 SERVICE_WLAN_PASSWORD = 'wlan_password'
 
 EXTRA_DEBUG = False
@@ -133,6 +138,13 @@ SERVICE_HOTSPOT_PASSWORD_SCHEMA = vol.All(
     _check_custom_password,
     _check_word_lengths
 )
+
+SERVICE_SEND_COMMAND_SCHEMA = vol.Schema({
+    vol.Required(CONF_COORDINATOR): cv.string,
+    vol.Required(CONF_MANAGER): cv.string,
+    vol.Required(CONF_COMMAND): cv.string,
+    vol.Optional(CONF_DATA, default=''): cv.string,
+})
 
 SERVICE_WLAN_PASSWORD_SCHEMA = vol.All(
     PASSWORD_SCHEMA.extend({
@@ -303,6 +315,31 @@ async def register_services(hass: HomeAssistant, coordinators: list[UnifiWifiCoo
         await coordinator.set_restsetting("guest_access", payload, False)
 
 
+    async def send_command_service(call: ServiceCall):
+        """Send a command."""
+        target = call.data.get(CONF_COORDINATOR)
+        idcoord = _coordinator_index(target)
+        coordinator = coordinators[idcoord]
+
+        manager = call.data.get(CONF_MANAGER)
+        if not manager in UNIFI_MANAGERS:
+            raise ServiceValidationError(f"Manager {manager} is an invalid option")
+
+        command = call.data.get(CONF_COMMAND)
+        if not command in UNIFI_COMMANDS:
+            raise ServiceValidationError(f"command {command} is an invalid option")
+
+        json = {'cmd': command}
+        # datastr should be formatted as "key1:value1,key2:value2"
+        datastr = call.data.get(CONF_DATA)
+        if datastr:
+            data = dict(map(lambda x: (x.split(":", 1)[0], x.split(":", 1)[1]), datastr.split(",")))
+            json.update(data)
+
+        if EXTRA_DEBUG: _LOGGER.debug("manager: %s,json: %s", manager, json)
+        await coordinator.send_command(manager, json)
+
+
     async def wlan_password_service(call: ServiceCall):
         """Set a new wlan password."""
         states = await _valid_entity_states(call.data.get(CONF_TARGET), call.context)
@@ -425,6 +462,14 @@ async def register_services(hass: HomeAssistant, coordinators: list[UnifiWifiCoo
         SERVICE_HOTSPOT_PASSWORD,
         hotspot_password_service,
         schema=SERVICE_HOTSPOT_PASSWORD_SCHEMA
+    )
+
+    async_register_admin_service(
+        hass,
+        DOMAIN,
+        SERVICE_SEND_COMMAND,
+        send_command_service,
+        schema=SERVICE_SEND_COMMAND_SCHEMA
     )
 
     async_register_admin_service(

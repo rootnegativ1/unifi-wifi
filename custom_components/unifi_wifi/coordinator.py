@@ -288,3 +288,24 @@ class UnifiWifiCoordinator(DataUpdateCoordinator):
             await session.close()
 
             return await self.async_request_refresh()
+
+    async def send_command(self, manager: str, json: str) -> bool:
+        """Send a command to the site."""
+        # This function is currently intended for development purposes only
+        async with aiohttp.ClientSession(
+            connector=aiohttp.TCPConnector(ssl=False)
+        ) as session:
+            _LOGGER.debug("send_cmd sending (%s) command to (%s)", json, manager)
+
+            headers = await self._login(session)
+
+            path = f"{self._api_prefix}/api/s/{self.site}/cmd/{manager}"
+            kwargs = {'headers': headers, 'json': json}
+            response = await self._request(session, 'post', path, **kwargs)
+
+            await self._logout(session, headers)
+
+            del headers
+            await session.close()
+
+            return await self.async_request_refresh()
