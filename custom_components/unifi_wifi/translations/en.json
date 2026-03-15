@@ -90,13 +90,16 @@
           "description": "coordinator to recieve the command. Limited to one coordinator per service call."
         },
 		"manager": {
-          "name": "Manager"
+          "name": "Manager",
+		  "description": ""
         },
 		"command": {
-          "name": "Command"
+          "name": "Command",
+		  "description": ""
         },
 		"data": {
-          "name": "Data"
+          "name": "Data",
+		  "description": ""
         }
       }
     },
