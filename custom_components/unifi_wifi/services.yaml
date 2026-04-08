@@ -38,9 +38,11 @@ hotspot_password:
       required: false
       selector:
         text:
+          type: password
     random:
       required: false
       default: true
+      example: true
       selector:
         boolean:
     random_settings:
@@ -59,7 +61,7 @@ hotspot_password:
               mode: dropdown
         punctuation:
           required: false
-          default: false
+          example: false
           selector:
             boolean:
         delimiter:
@@ -96,6 +98,94 @@ hotspot_password:
               min: 8
               max: 63
 
+send_command:
+  fields:
+    coordinator:
+      required: true
+      selector:
+        text:
+    manager:
+      required: true
+      selector:
+        select:
+          custom_value: false
+          options:
+            - evtmgt
+            - sitemgr
+            - stamgr
+            - devmgr
+            - backup
+            - system
+            - stat
+    command:
+      required: true
+      selector:
+        select:
+          custom_value: false
+          options:
+            - label: archive-all-alarms
+              value: archive-all-alarms
+            - label: add-site --> desc = Descriptive name ( required ), name = shortname ( in the URL )
+              value: add-site
+            - label: delete-site --> name = short name ( required )
+              value: delete-site
+            - label: update-site --> desc = Descriptive name ( required )
+              value: update-site
+            - label: get-admins --> List all administrators and permission for this site
+              value: get-admins
+            - label: move-device --> mac = device mac ( required ), site_id = 24 digit id ( required )
+              value: move-device
+            - label: delete-device --> mac = device mac ( required )
+              value: delete-device
+            - label: block-sta --> mac = client mac ( required )
+              value: block-sta
+            - label: unblock-sta --> mac = client mac ( required )
+              value: unblock-sta
+            - label: kick-sta --> Disconnect; mac = client mac (required )
+              value: kick-sta
+            - label: forget-sta --> Forget a client ( controller 5.9.x only )
+              value: forget-sta
+            - label: unauthorize-guest --> Unauthorize a client device, mac = client mac (required)
+              value: unauthorize-guest
+            - label: adopt --> mac = device mac ( required )
+              value: adopt
+            - label: restart --> mac = device mac ( required )
+              value: restart
+            - label: force-provision --> mac = device mac ( required )
+              value: force-provision
+            - label: power-cycle --> mac = switch mac ( required ), port_idx = PoE port to cycle ( required )
+              value: power-cycle
+            - label: speedtest --> Start a speed test
+              value: speedtest
+            - label: speedtest-status --> get the current state of the speed test
+              value: speedtest-status
+            - label: set-locate --> mac = device mac ( required ) blink unit to locate
+              value: set-locate
+            - label: unset-locate --> mac = device mac ( required ) led to normal state
+              value: unset-locate
+            - label: upgrade --> mac = device mac ( required ) upgrade firmware
+              value: upgrade
+            - label: upgrade-external --> mac = device mac ( required ), url = firmware URL ( required )
+              value: upgrade-external
+            - label: migrate --> mac = device mac ( required ), inform_url = New Inform URL to push to device (required)
+              value: migrate
+            - label: cancel-migrate --> mac = device mac ( required )
+              value: cancel-migrate
+            - label: spectrum-scan --> mac = device mac ( ap only, required ) trigger RF scan
+              value: spectrum-scan
+            - label: list-backups --> list of autobackup files
+              value: spectrum-scan
+            - label: delete-backup --> filename ( required )
+              value: delete-backup
+            - label: backup --> create a backup. This appears to backup to a fixed location in the filesystem
+              value: backup
+            - label: clear-dpi --> resets the site wide DPI counters
+              value: clear-dpi
+    data:
+      required: false
+      selector:
+        text:
+
 wlan_password:
   fields:
     target:
@@ -109,9 +199,11 @@ wlan_password:
       required: false
       selector:
         text:
+          type: password
     random:
       required: false
       default: true
+      example: true
       selector:
         boolean:
     random_settings:
@@ -130,7 +222,7 @@ wlan_password:
               mode: dropdown
         punctuation:
           required: false
-          default: false
+          example: false
           selector:
             boolean:
         delimiter:
