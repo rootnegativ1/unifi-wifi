@@ -141,7 +141,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             CONF_QR_QUALITY: quality
         }
 
-        wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT],
+        wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT]
         wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
         if wpa3_support and not wpa3_transition:
             wpa_mode = 'WPA3'
@@ -258,23 +258,17 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
     def _create_qr(self) -> None:
         """Create a QR code and save it as a PNG."""
-        idssid = self._ssid_index(self._attributes[CONF_SSID])
 
-        wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT]
-        wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
-        if wpa3_support and not wpa3_transition:
-            wpa_mode = 'WPA3'
-        elif wpa3_support and wpa3_transition:
-            wpa_mode = 'WPA2/WPA3'
-        else:
-            wpa_mode = 'WPA2'
+        # v3.1.0 introduced punctuation characters including \ ; , " : which need to be escaped
+        escaped_pass = re.sub(r'([\\ \; \, \" \:])', r'\\\1', self._attributes[CONF_PASSWORD])
 
+        wpa_mode = self._attributes[CONF_WPA_MODE]
         if wpa_mode == 'WPA3':
             # add the WPA2/WPA3 transition mode disable flag
             # not sure if this is actually necessary
-            qrtext = f"WIFI:T:WPA;R:1;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
+            qrtext = f"WIFI:T:WPA;R:1;S:{self._attributes[CONF_SSID]};P:{escaped_pass};;"
         else:
-            qrtext = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{self._attributes[CONF_PASSWORD]};;"
+            qrtext = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{escaped_pass};;"
 
         self._attributes[CONF_QR_TEXT] = qrtext
 
@@ -366,6 +360,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attributes[CONF_HIDE_SSID] = hide_state
             _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'hidden' if bool(hide_state) else 'broadcasting')
 
+        create_qr = False
         if wpa_change or password_change:
             self._attributes[CONF_WPA_MODE] = wpa_mode
             self._attributes[CONF_PASSWORD] = new_password
@@ -373,7 +368,8 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attributes[CONF_TIMESTAMP] = int(dt.timestamp())
             self._attr_image_last_updated = dt
 
-            self._create_qr()
+            # Allow _create_qr() to be triggered after async_write_ha_state()
+            create_qr = True
 
             if wpa_change:
                 _LOGGER.debug("SSID %s on coordinator %s is now in %s mode", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], wpa_mode)
@@ -385,3 +381,7 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
                     _LOGGER.debug("SSID %s on coordinator %s has a new password", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR])
 
         self.async_write_ha_state()
+
+        # _create_qr() needs access to updated attributes
+        if create_qr:
+            self._create_qr()
