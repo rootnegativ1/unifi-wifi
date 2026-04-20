@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import logging, collections, qrcode, io
-
+import logging, collections, qrcode, io, re
 
 from homeassistant.components.image import ImageEntity
 from homeassistant.const import (
@@ -43,6 +42,7 @@ from .const import (
     UNIFI_ID,
     UNIFI_NAME,
     UNIFI_NETWORKCONF_ID,
+    UNIFI_SECURITY,
     UNIFI_X_PASSPHRASE,
     UNIFI_PASSWORD,
     UNIFI_PRESHARED_KEYS,
@@ -149,7 +149,6 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             wpa_mode = 'WPA2/WPA3'
         else:
             wpa_mode = 'WPA2'
-        attributes[CONF_WPA_MODE] = wpa_mode
 
         if bool(key):
             attributes[CONF_PPSK] = True
@@ -160,8 +159,14 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attr_name = f"{attributes[CONF_COORDINATOR]} {ssid} {attributes[CONF_NETWORK_NAME]} wifi"
         else:
             attributes[CONF_PPSK] = False
-            attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
             self._attr_name = f"{attributes[CONF_COORDINATOR]} {ssid} wifi"
+            if self.coordinator.wlanconf[idssid][UNIFI_SECURITY] == 'open':
+                attributes[CONF_PASSWORD] = 'none'
+                wpa_mode = 'OPEN'
+            else:
+                attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
+
+        attributes[CONF_WPA_MODE] = wpa_mode
 
         if EXTRA_DEBUG:
             _LOGGER.debug("wlanconf for image.%s: [%s]", slugify(self._attr_name), self.coordinator.wlanconf[idssid])
@@ -267,9 +272,10 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             # add the WPA2/WPA3 transition mode disable flag
             # not sure if this is actually necessary
             qrtext = f"WIFI:T:WPA;R:1;S:{self._attributes[CONF_SSID]};P:{escaped_pass};;"
+        elif wpa_mode == 'OPEN':
+            qrtext = f"WIFI:T:nopass;S:{self._attributes[CONF_SSID]};;"
         else:
             qrtext = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{escaped_pass};;"
-
         self._attributes[CONF_QR_TEXT] = qrtext
 
         match self._attributes[CONF_QR_QUALITY]:
@@ -340,7 +346,11 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             idnetwork = self._network_index(self._attributes[UNIFI_NETWORKCONF_ID])
             new_password = self.coordinator.wlanconf[idssid][UNIFI_PRESHARED_KEYS][idnetwork][UNIFI_PASSWORD]
         else:
-            new_password = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
+            if self.coordinator.wlanconf[idssid][UNIFI_SECURITY] == 'open':
+                new_password = 'none'
+                wpa_mode = 'OPEN'
+            else:
+                new_password = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
 
         enabled_change = bool(self._attributes[CONF_ENABLED] != enabled_state)
         hide_change = bool(self._attributes[CONF_HIDE_SSID] != hide_state)
