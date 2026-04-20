@@ -40,6 +40,7 @@ UNIFI_MANAGERS = ['evtmgt','sitemgr','stamgr','devmgr','backup','system','stat']
 UNIFI_NAME = 'name' # duplicate (const)
 UNIFI_NETWORKCONF_ID = 'networkconf_id'
 UNIFI_CSRF_TOKEN = 'X-CSRF-Token'
+UNIFI_SECURITY = 'security'
 UNIFI_X_PASSPHRASE = 'x_passphrase'
 UNIFI_X_PASSWORD = 'x_password'
 UNIFI_PASSWORD = 'password' # duplicate (const)
