@@ -2,6 +2,7 @@
 
 DOMAIN = 'unifi_wifi'
 
+CONF_AUTH_TYPE = 'auth_type'
 CONF_BACK_COLOR = 'back_color'
 CONF_CHAR_COUNT = 'char_count'
 CONF_COORDINATOR = 'coordinator'
@@ -29,7 +30,6 @@ CONF_SSID = 'ssid'
 CONF_TIMESTAMP = 'timestamp'
 CONF_UNIFI_OS = 'unifi_os'
 CONF_WORD_COUNT = 'word_count'
-CONF_WPA_MODE = 'wpa_mode'
 
 # Some of the below values are duplicates of CONF or homeassistant.const values
 # This is done to allow for changes in UniFi API keys

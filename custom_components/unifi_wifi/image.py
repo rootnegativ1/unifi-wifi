@@ -23,6 +23,7 @@ from homeassistant.util.dt import parse_datetime, utcnow
 from homeassistant.util import slugify
 from .const import (
     DOMAIN,
+    CONF_AUTH_TYPE,
     CONF_BACK_COLOR,
     CONF_COORDINATOR,
     CONF_FILE_OUTPUT,
@@ -37,7 +38,6 @@ from .const import (
     CONF_SITE,
     CONF_SSID,
     CONF_TIMESTAMP,
-    CONF_WPA_MODE,
     UNIFI_HIDE_SSID,
     UNIFI_ID,
     UNIFI_NAME,
@@ -144,11 +144,11 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT]
         wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
         if wpa3_support and not wpa3_transition:
-            wpa_mode = 'WPA3'
+            auth_type = 'WPA3'
         elif wpa3_support and wpa3_transition:
-            wpa_mode = 'WPA2/WPA3'
+            auth_type = 'WPA2/WPA3'
         else:
-            wpa_mode = 'WPA2'
+            auth_type = 'WPA2'
 
         if bool(key):
             attributes[CONF_PPSK] = True
@@ -161,12 +161,12 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             attributes[CONF_PPSK] = False
             self._attr_name = f"{attributes[CONF_COORDINATOR]} {ssid} wifi"
             if self.coordinator.wlanconf[idssid][UNIFI_SECURITY] == 'open':
-                attributes[CONF_PASSWORD] = 'none'
-                wpa_mode = 'OPEN'
+                attributes[CONF_PASSWORD] = 'nopass'
+                auth_type = 'OPEN'
             else:
                 attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
 
-        attributes[CONF_WPA_MODE] = wpa_mode
+        attributes[CONF_AUTH_TYPE] = auth_type
 
         if EXTRA_DEBUG:
             _LOGGER.debug("wlanconf for image.%s: [%s]", slugify(self._attr_name), self.coordinator.wlanconf[idssid])
@@ -241,11 +241,10 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
             # Sometimes on reboots, and otherwise, the image entity is (re-)added to HASS
             # If these attributes are not restored, then a timestamp update may be triggered
-            # or the WPA_MODE defaults to WPA3
             for attr in [
                 CONF_PASSWORD,
                 CONF_TIMESTAMP,
-                CONF_WPA_MODE
+                CONF_AUTH_TYPE
             ]:
                 if attr in last_state.attributes:
                     self._attributes[attr] = last_state.attributes[attr]
@@ -268,12 +267,12 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         escaped_pass = re.sub(r'([\\ \; \, \" \:])', r'\\\1', self._attributes[CONF_PASSWORD])
         escaped_ssid = re.sub(r'([\\ \; \, \" \:])', r'\\\1', self._attributes[CONF_SSID])
 
-        wpa_mode = self._attributes[CONF_WPA_MODE]
-        if wpa_mode == 'WPA3':
+        auth_type = self._attributes[CONF_AUTH_TYPE]
+        if auth_type == 'WPA3':
             # add the WPA2/WPA3 transition mode disable flag
             # not sure if this is actually necessary
             qrtext = f"WIFI:T:WPA;R:1;S:{escaped_ssid};P:{escaped_pass};;"
-        elif wpa_mode == 'OPEN':
+        elif auth_type == 'OPEN':
             qrtext = f"WIFI:T:nopass;S:{escaped_ssid};;"
         else:
             qrtext = f"WIFI:T:WPA;S:{escaped_ssid};P:{escaped_pass};;"
@@ -337,28 +336,28 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT]
         wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
         if wpa3_support and not wpa3_transition:
-            wpa_mode = 'WPA3'
+            auth_type = 'WPA3'
         elif wpa3_support and wpa3_transition:
-            wpa_mode = 'WPA2/WPA3'
+            auth_type = 'WPA2/WPA3'
         else:
-            wpa_mode = 'WPA2'
+            auth_type = 'WPA2'
 
         if self._attributes[CONF_PPSK]:
             idnetwork = self._network_index(self._attributes[UNIFI_NETWORKCONF_ID])
             new_password = self.coordinator.wlanconf[idssid][UNIFI_PRESHARED_KEYS][idnetwork][UNIFI_PASSWORD]
         else:
             if self.coordinator.wlanconf[idssid][UNIFI_SECURITY] == 'open':
-                new_password = 'none'
-                wpa_mode = 'OPEN'
+                new_password = 'nopass'
+                auth_type = 'OPEN'
             else:
                 new_password = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
 
         enabled_change = bool(self._attributes[CONF_ENABLED] != enabled_state)
         hide_change = bool(self._attributes[CONF_HIDE_SSID] != hide_state)
-        wpa_change = bool(self._attributes[CONF_WPA_MODE] != wpa_mode)
+        auth_change = bool(self._attributes[CONF_AUTH_TYPE] != auth_type)
         password_change = bool(self._attributes[CONF_PASSWORD] != new_password)
 
-        if not (enabled_change or hide_change or wpa_change or password_change):
+        if not (enabled_change or hide_change or auth_change or password_change):
             return
 
         self._attributes[UNIFI_ID] = self.coordinator.wlanconf[idssid][UNIFI_ID]
@@ -372,8 +371,8 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'hidden' if bool(hide_state) else 'broadcasting')
 
         create_qr = False
-        if wpa_change or password_change:
-            self._attributes[CONF_WPA_MODE] = wpa_mode
+        if auth_change or password_change:
+            self._attributes[CONF_AUTH_TYPE] = auth_type
             self._attributes[CONF_PASSWORD] = new_password
             dt = utcnow()
             self._attributes[CONF_TIMESTAMP] = int(dt.timestamp())
@@ -382,8 +381,8 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             # Allow _create_qr() to be triggered after async_write_ha_state()
             create_qr = True
 
-            if wpa_change:
-                _LOGGER.debug("SSID %s on coordinator %s is now in %s mode", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], wpa_mode)
+            if auth_change:
+                _LOGGER.debug("SSID %s on coordinator %s is now in %s mode", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], auth_type)
 
             if password_change:
                 if self._attributes[CONF_PPSK]:
