@@ -263,19 +263,24 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
     def _create_qr(self) -> None:
         """Create a QR code and save it as a PNG."""
 
-        # v3.1.0 introduced punctuation characters including \ ; , " : which need to be escaped
-        escaped_pass = re.sub(r'([\\ \; \, \" \:])', r'\\\1', self._attributes[CONF_PASSWORD])
+        qrtext = 'WIFI:' # Start QR generation string
+
         escaped_ssid = re.sub(r'([\\ \; \, \" \:])', r'\\\1', self._attributes[CONF_SSID])
 
         auth_type = self._attributes[CONF_AUTH_TYPE]
-        if auth_type == 'WPA3':
-            # add the WPA2/WPA3 transition mode disable flag
-            # not sure if this is actually necessary
-            qrtext = f"WIFI:T:WPA;R:1;S:{escaped_ssid};P:{escaped_pass};;"
-        elif auth_type == 'OPEN':
-            qrtext = f"WIFI:T:nopass;S:{escaped_ssid};;"
-        else:
-            qrtext = f"WIFI:T:WPA;S:{escaped_ssid};P:{escaped_pass};;"
+        if auth_type == 'OPEN':
+            qrtext += f"T:nopass;S:{escaped_ssid};"
+        else: # WPA2, WPA2/WPA3, or WPA3
+            qrtext += f"T:WPA;S:{escaped_ssid};"
+            if auth_type == 'WPA3':
+                qrtext += 'R:1;' # add the WPA2/WPA3 transition mode disable flag
+            escaped_pass = re.sub(r'([\\ \; \, \" \:])', r'\\\1', self._attributes[CONF_PASSWORD])
+            qrtext += f"P:{escaped_pass};"
+
+        if self._attributes[CONF_HIDE_SSID]:
+            qrtext += 'H:true;'
+
+        qrtext += ';' # End QR generation string
         self._attributes[CONF_QR_TEXT] = qrtext
 
         match self._attributes[CONF_QR_QUALITY]:
