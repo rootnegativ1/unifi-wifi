@@ -266,16 +266,17 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
         # v3.1.0 introduced punctuation characters including \ ; , " : which need to be escaped
         escaped_pass = re.sub(r'([\\ \; \, \" \:])', r'\\\1', self._attributes[CONF_PASSWORD])
+        escaped_ssid = re.sub(r'([\\ \; \, \" \:])', r'\\\1', self._attributes[CONF_SSID])
 
         wpa_mode = self._attributes[CONF_WPA_MODE]
         if wpa_mode == 'WPA3':
             # add the WPA2/WPA3 transition mode disable flag
             # not sure if this is actually necessary
-            qrtext = f"WIFI:T:WPA;R:1;S:{self._attributes[CONF_SSID]};P:{escaped_pass};;"
+            qrtext = f"WIFI:T:WPA;R:1;S:{escaped_ssid};P:{escaped_pass};;"
         elif wpa_mode == 'OPEN':
-            qrtext = f"WIFI:T:nopass;S:{self._attributes[CONF_SSID]};;"
+            qrtext = f"WIFI:T:nopass;S:{escaped_ssid};;"
         else:
-            qrtext = f"WIFI:T:WPA;S:{self._attributes[CONF_SSID]};P:{escaped_pass};;"
+            qrtext = f"WIFI:T:WPA;S:{escaped_ssid};P:{escaped_pass};;"
         self._attributes[CONF_QR_TEXT] = qrtext
 
         match self._attributes[CONF_QR_QUALITY]:
