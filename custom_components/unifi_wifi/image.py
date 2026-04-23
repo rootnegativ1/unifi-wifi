@@ -371,12 +371,9 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             self._attributes[CONF_ENABLED] = enabled_state
             _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'enabled' if bool(enabled_state) else 'disabled')
 
-        if hide_change:
-            self._attributes[CONF_HIDE_SSID] = hide_state
-            _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'hidden' if bool(hide_state) else 'broadcasting')
-
         create_qr = False
-        if auth_change or password_change:
+        if hide_change or auth_change or password_change:
+            self._attributes[CONF_HIDE_SSID] = hide_state
             self._attributes[CONF_AUTH_TYPE] = auth_type
             self._attributes[CONF_PASSWORD] = new_password
             dt = utcnow()
@@ -385,6 +382,9 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
 
             # Allow _create_qr() to be triggered after async_write_ha_state()
             create_qr = True
+
+            if hide_change:
+                _LOGGER.debug("SSID %s on coordinator %s is now %s", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], 'hidden' if bool(hide_state) else 'broadcasting')
 
             if auth_change:
                 _LOGGER.debug("SSID %s on coordinator %s is now in %s mode", self._attributes[CONF_SSID], self._attributes[CONF_COORDINATOR], auth_type)
