@@ -141,32 +141,33 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
             CONF_QR_QUALITY: quality
         }
 
-        wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT]
-        wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
-        if wpa3_support and not wpa3_transition:
-            auth_type = 'WPA3'
-        elif wpa3_support and wpa3_transition:
-            auth_type = 'WPA2/WPA3'
-        else:
-            auth_type = 'WPA2'
-
-        if bool(key):
-            attributes[CONF_PPSK] = True
-            attributes[CONF_PASSWORD] = key[UNIFI_PASSWORD]
-            attributes[UNIFI_NETWORKCONF_ID] = key[UNIFI_NETWORKCONF_ID]
-            idnetwork = [x[UNIFI_ID] for x in self.coordinator.networkconf].index(key[UNIFI_NETWORKCONF_ID])
-            attributes[CONF_NETWORK_NAME] = self.coordinator.networkconf[idnetwork][UNIFI_NAME]
-            self._attr_name = f"{attributes[CONF_COORDINATOR]} {ssid} {attributes[CONF_NETWORK_NAME]} wifi"
-        else:
+        if self.coordinator.wlanconf[idssid][UNIFI_SECURITY] == 'open':
+            attributes[CONF_AUTH_TYPE] = 'OPEN'
             attributes[CONF_PPSK] = False
+            attributes[CONF_PASSWORD] = 'nopass'
             self._attr_name = f"{attributes[CONF_COORDINATOR]} {ssid} wifi"
-            if self.coordinator.wlanconf[idssid][UNIFI_SECURITY] == 'open':
-                attributes[CONF_PASSWORD] = 'nopass'
-                auth_type = 'OPEN'
+        else:
+            wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT]
+            wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
+            if wpa3_support and not wpa3_transition:
+                auth_type = 'WPA3'
+            elif wpa3_support and wpa3_transition:
+                auth_type = 'WPA2/WPA3'
             else:
-                attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
+                auth_type = 'WPA2'
+            attributes[CONF_AUTH_TYPE] = auth_type
 
-        attributes[CONF_AUTH_TYPE] = auth_type
+            if bool(key):
+                attributes[CONF_PPSK] = True
+                attributes[CONF_PASSWORD] = key[UNIFI_PASSWORD]
+                attributes[UNIFI_NETWORKCONF_ID] = key[UNIFI_NETWORKCONF_ID]
+                idnetwork = [x[UNIFI_ID] for x in self.coordinator.networkconf].index(attributes[UNIFI_NETWORKCONF_ID])
+                attributes[CONF_NETWORK_NAME] = self.coordinator.networkconf[idnetwork][UNIFI_NAME]
+                self._attr_name = f"{attributes[CONF_COORDINATOR]} {ssid} {attributes[CONF_NETWORK_NAME]} wifi"
+            else:
+                attributes[CONF_PPSK] = False
+                attributes[CONF_PASSWORD] = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
+                self._attr_name = f"{attributes[CONF_COORDINATOR]} {ssid} wifi"
 
         if EXTRA_DEBUG:
             _LOGGER.debug("wlanconf for image.%s: [%s]", slugify(self._attr_name), self.coordinator.wlanconf[idssid])
@@ -338,22 +339,22 @@ class UnifiWifiImage(CoordinatorEntity, ImageEntity, RestoreEntity):
         enabled_state = self.coordinator.wlanconf[idssid][CONF_ENABLED]
         hide_state = self.coordinator.wlanconf[idssid][UNIFI_HIDE_SSID]
 
-        wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT]
-        wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
-        if wpa3_support and not wpa3_transition:
-            auth_type = 'WPA3'
-        elif wpa3_support and wpa3_transition:
-            auth_type = 'WPA2/WPA3'
+        if self.coordinator.wlanconf[idssid][UNIFI_SECURITY] == 'open':
+            auth_type = 'OPEN'
+            new_password = 'nopass'
         else:
-            auth_type = 'WPA2'
+            wpa3_support = self.coordinator.wlanconf[idssid][UNIFI_WPA3_SUPPORT]
+            wpa3_transition = self.coordinator.wlanconf[idssid][UNIFI_WPA3_TRANSITION]
+            if wpa3_support and not wpa3_transition:
+                auth_type = 'WPA3'
+            elif wpa3_support and wpa3_transition:
+                auth_type = 'WPA2/WPA3'
+            else:
+                auth_type = 'WPA2'
 
-        if self._attributes[CONF_PPSK]:
-            idnetwork = self._network_index(self._attributes[UNIFI_NETWORKCONF_ID])
-            new_password = self.coordinator.wlanconf[idssid][UNIFI_PRESHARED_KEYS][idnetwork][UNIFI_PASSWORD]
-        else:
-            if self.coordinator.wlanconf[idssid][UNIFI_SECURITY] == 'open':
-                new_password = 'nopass'
-                auth_type = 'OPEN'
+            if self._attributes[CONF_PPSK]:
+                idnetwork = self._network_index(self._attributes[UNIFI_NETWORKCONF_ID])
+                new_password = self.coordinator.wlanconf[idssid][UNIFI_PRESHARED_KEYS][idnetwork][UNIFI_PASSWORD]
             else:
                 new_password = self.coordinator.wlanconf[idssid][UNIFI_X_PASSPHRASE]
 
